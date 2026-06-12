@@ -25,7 +25,6 @@ import {
   CheckCircle2,
   ChevronRight,
   ClipboardCheck,
-  Clock3,
   Code2,
   Cpu,
   Database,
@@ -36,7 +35,7 @@ import {
   Layers,
   Lightbulb,
   LineChart,
-  ListTodo,
+  ListChecks,
   Map,
   Menu,
   MessageCircle,
@@ -49,7 +48,6 @@ import {
   Rocket,
   Search,
   Send,
-  Settings2,
   ShieldCheck,
   Sparkles,
   Star,
@@ -81,65 +79,30 @@ const primaryGradient =
   "linear-gradient(135deg, #6C63FF, #8B5CF6, #A855F7)";
 
 const navItems = [
-  { label: "Dashboard", icon: BarChart3 },
-  { label: "Communication", icon: Mic2 },
-  { label: "DSA Hub", icon: Code2 },
-  { label: "SQL Arena", icon: Database },
-  { label: "Interviews", icon: MessageSquareText },
-  { label: "Planner", icon: CalendarCheck },
-  { label: "Resume", icon: FileText },
-  { label: "Jobs", icon: Briefcase },
+  { label: "Dashboard", href: "#dashboard", icon: BarChart3 },
+  { label: "Communication", href: "#communication", icon: Mic2 },
+  { label: "DSA Hub", href: "#dsa", icon: Code2 },
+  { label: "SQL Arena", href: "#sql", icon: Database },
+  { label: "Interviews", href: "#interviews", icon: MessageSquareText },
+  { label: "Planner", href: "#planner", icon: CalendarCheck },
+  { label: "Career Tools", href: "#career", icon: Briefcase },
+  { label: "Analytics", href: "#analytics", icon: LineChart },
 ];
 
 const progressStats = [
-  {
-    label: "DSA Questions Solved",
-    value: 74,
-    total: 100,
-    caption: "6 solved today",
-    icon: Code2,
-    color: "from-violet-500 to-fuchsia-500",
-  },
-  {
-    label: "SQL Problems Solved",
-    value: 48,
-    total: 60,
-    caption: "3 query drills",
-    icon: Database,
-    color: "from-cyan-400 to-blue-500",
-  },
-  {
-    label: "Communication Practice",
-    value: 82,
-    total: 100,
-    caption: "18 min speaking",
-    icon: Mic2,
-    color: "from-emerald-400 to-teal-500",
-  },
-  {
-    label: "Interview Practice",
-    value: 63,
-    total: 100,
-    caption: "2 mock rounds",
-    icon: MessageCircle,
-    color: "from-amber-300 to-orange-500",
-  },
-  {
-    label: "Daily Streak",
-    value: 21,
-    total: 30,
-    caption: "21 days active",
-    icon: Flame,
-    color: "from-rose-400 to-pink-500",
-  },
+  ["DSA Questions Solved", 74, 100, "6 solved today", Code2, "from-violet-500 to-fuchsia-500"],
+  ["SQL Problems Solved", 48, 60, "3 query drills", Database, "from-cyan-400 to-blue-500"],
+  ["Communication Practice", 82, 100, "18 min speaking", Mic2, "from-emerald-400 to-teal-500"],
+  ["Interview Practice", 63, 100, "2 mock rounds", MessageCircle, "from-amber-300 to-orange-500"],
+  ["Daily Streak", 21, 30, "21 days active", Flame, "from-rose-400 to-pink-500"],
 ];
 
 const communicationFeatures = [
-  "Daily Speaking Topic",
-  "Vocabulary Builder",
-  "Grammar Correction",
-  "Mock HR Interview",
-  "Confidence Score",
+  ["Daily Speaking Topic", "Describe a project where you solved a real user problem."],
+  ["Vocabulary Builder", "impact, iteration, adoption, measurable"],
+  ["Grammar Correction", "Past tense, articles, punctuation, and sentence flow."],
+  ["Mock HR Interview", "Tell me about yourself. Why should we hire you?"],
+  ["Confidence Score", "Grammar 8, vocabulary 7, fluency 8, confidence 8."],
 ];
 
 const dsaTopics = [
@@ -155,7 +118,7 @@ const dsaTopics = [
 
 const dsaProblems = {
   Easy: {
-    title: "Two Pointer Pair Sum",
+    title: "Two Sum With Hash Map",
     tags: ["Arrays", "Hashing"],
     acceptance: "71%",
     time: "O(n)",
@@ -169,11 +132,11 @@ const dsaProblems = {
     prompt: "Return the length of the longest unique-character window.",
   },
   Hard: {
-    title: "Minimum Window Subsequence",
-    tags: ["DP", "Strings"],
+    title: "Minimum Window Substring",
+    tags: ["Strings", "Two Pointers"],
     acceptance: "32%",
-    time: "O(n*m)",
-    prompt: "Find the smallest source window containing a target sequence.",
+    time: "O(n)",
+    prompt: "Find the smallest source window containing every target character.",
   },
 };
 
@@ -207,6 +170,14 @@ const interviewData = {
   },
 };
 
+const plannerGoals = [
+  ["Solve 3 DSA Questions", "High", "75 min"],
+  ["Practice SQL for 30 Minutes", "Medium", "30 min"],
+  ["Communication Practice", "High", "20 min"],
+  ["Apply for Jobs", "Medium", "25 min"],
+  ["Project Development", "Low", "60 min"],
+];
+
 const roadmapPlans = {
   "MERN Developer": [
     ["Week 1", "JavaScript depth, Git workflow, API basics"],
@@ -227,7 +198,7 @@ const roadmapPlans = {
     ["Week 4", "API project, docs, backend interview prep"],
   ],
   "Full Stack Developer": [
-    ["Week 1", "React + API integration project sprint"],
+    ["Week 1", "React plus API integration project sprint"],
     ["Week 2", "Auth, database design, protected dashboards"],
     ["Week 3", "Testing, CI, performance, deployment"],
     ["Week 4", "Mock interviews and project storytelling"],
@@ -235,31 +206,11 @@ const roadmapPlans = {
 };
 
 const kanbanColumns = [
-  {
-    title: "Applied",
-    color: "bg-sky-400",
-    jobs: ["TCS Ninja", "Zoho Developer", "Infosys Specialist"],
-  },
-  {
-    title: "Assessment",
-    color: "bg-amber-300",
-    jobs: ["Accenture ASE", "Wipro Elite"],
-  },
-  {
-    title: "Interview Scheduled",
-    color: "bg-violet-400",
-    jobs: ["Freshworks Intern", "Cognizant GenC"],
-  },
-  {
-    title: "Rejected",
-    color: "bg-rose-400",
-    jobs: ["CloudNova Trainee"],
-  },
-  {
-    title: "Selected",
-    color: "bg-emerald-400",
-    jobs: ["PixelStack SDE"],
-  },
+  ["Applied", "bg-sky-400", ["TCS Ninja", "Zoho Developer", "Infosys Specialist"]],
+  ["Assessment", "bg-amber-300", ["Accenture ASE", "Wipro Elite"]],
+  ["Interview Scheduled", "bg-violet-400", ["Freshworks Intern", "Cognizant GenC"]],
+  ["Rejected", "bg-rose-400", ["CloudNova Trainee"]],
+  ["Selected", "bg-emerald-400", ["PixelStack SDE"]],
 ];
 
 const badges = [
@@ -277,16 +228,23 @@ const leaderboard = [
 ];
 
 const priorityStyles = {
-  High: "border-rose-400/40 bg-rose-500/[0.15] text-rose-100 dark:text-rose-100",
-  Medium:
-    "border-amber-300/40 bg-amber-400/[0.15] text-amber-900 dark:text-amber-100",
-  Low: "border-emerald-300/40 bg-emerald-400/[0.15] text-emerald-900 dark:text-emerald-100",
+  High: "border-rose-400/40 bg-rose-500/[0.15] text-rose-100",
+  Medium: "border-amber-300/40 bg-amber-400/[0.15] text-amber-100",
+  Low: "border-emerald-300/40 bg-emerald-400/[0.15] text-emerald-100",
 };
+
+function GlassCard({ children, className = "", id }) {
+  return (
+    <section id={id} className={`glass-card ${className}`}>
+      {children}
+    </section>
+  );
+}
 
 function IconBadge({ icon: Icon, className = "", label }) {
   return (
     <span
-      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/[0.12] bg-white/10 shadow-soft-panel backdrop-blur ${className}`}
+      className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.12] bg-white/10 shadow-soft-panel backdrop-blur ${className}`}
       aria-label={label}
     >
       <Icon className="h-5 w-5" />
@@ -294,20 +252,14 @@ function IconBadge({ icon: Icon, className = "", label }) {
   );
 }
 
-function GlassCard({ children, className = "" }) {
-  return <div className={`glass-card ${className}`}>{children}</div>;
-}
-
 function SectionHeader({ eyebrow, title, action }) {
   return (
     <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        {eyebrow ? (
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
-            {eyebrow}
-          </p>
-        ) : null}
-        <h2 className="text-2xl font-semibold text-slate-950 dark:text-paper">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
+          {eyebrow}
+        </p>
+        <h2 className="text-2xl font-black text-slate-950 dark:text-paper">
           {title}
         </h2>
       </div>
@@ -325,9 +277,23 @@ function ProgressBar({ value, total = 100, color = "from-violet-500 to-fuchsia-5
         initial={{ width: 0 }}
         whileInView={{ width: `${width}%` }}
         viewport={{ once: true }}
-        transition={{ duration: 0.9, ease: "easeOut" }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
         className={`h-full rounded-full bg-gradient-to-r ${color}`}
       />
+    </div>
+  );
+}
+
+function CodeEditor({ title = "solution.js", children, className = "" }) {
+  return (
+    <div className={`code-editor ${className}`}>
+      <div className="code-editor-top">
+        <span />
+        <span />
+        <span />
+        <p>{title}</p>
+      </div>
+      <pre>{children}</pre>
     </div>
   );
 }
@@ -347,7 +313,7 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
-                className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-glow"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-white shadow-glow"
                 style={{ background: primaryGradient }}
               >
                 <GraduationCap className="h-6 w-6" />
@@ -360,7 +326,7 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
               </div>
             </div>
             <button
-              className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10 lg:hidden"
+              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10 lg:hidden"
               onClick={() => setMobileOpen(false)}
               aria-label="Close navigation"
             >
@@ -372,8 +338,8 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
             {navItems.map((item, index) => (
               <a
                 key={item.label}
-                href={`#${item.label.toLowerCase().replaceAll(" ", "-")}`}
-                className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition ${
+                href={item.href}
+                className={`group flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
                   index === 0
                     ? "bg-violet-500/[0.16] text-violet-700 ring-1 ring-violet-400/30 dark:text-violet-100"
                     : "text-slate-600 hover:bg-slate-900/5 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
@@ -396,7 +362,7 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
                 </p>
               </div>
             </div>
-            <button className="mt-4 w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:scale-[1.01] dark:bg-white dark:text-slate-950">
+            <button className="mt-4 w-full rounded-lg bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:scale-[1.01] dark:bg-white dark:text-slate-950">
               Start deep work
             </button>
           </GlassCard>
@@ -414,23 +380,23 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
           <header className="sticky top-0 z-20 border-b border-slate-200/70 bg-slate-100/80 px-4 py-3 backdrop-blur-2xl dark:border-white/10 dark:bg-[#0F172A]/80 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3">
               <button
-                className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/10 lg:hidden"
+                className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-white/10 lg:hidden"
                 onClick={() => setMobileOpen(true)}
                 aria-label="Open navigation"
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <div className="hidden min-w-0 flex-1 items-center rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-400 md:flex">
+              <div className="hidden min-w-0 flex-1 items-center rounded-lg border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-400 md:flex">
                 <Search className="mr-3 h-4 w-4" />
                 Search DSA, SQL, company prep, resume feedback...
               </div>
               <div className="ml-auto flex items-center gap-2">
-                <div className="hidden rounded-2xl border border-violet-300/30 bg-violet-500/[0.12] px-4 py-2 text-sm font-semibold text-violet-700 dark:text-violet-100 sm:block">
+                <div className="hidden rounded-lg border border-violet-300/30 bg-violet-500/[0.12] px-4 py-2 text-sm font-semibold text-violet-700 dark:text-violet-100 sm:block">
                   6,980 XP
                 </div>
                 <div className="relative">
                   <button
-                    className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/10"
+                    className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/10"
                     aria-label="Notifications"
                     onClick={() => setNotificationsOpen((value) => !value)}
                   >
@@ -440,7 +406,7 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
                   {notificationsOpen ? <NotificationPanel /> : null}
                 </div>
                 <button
-                  className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/10"
+                  className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 dark:border-white/10 dark:bg-white/10"
                   aria-label="Toggle theme"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 >
@@ -475,7 +441,7 @@ function NotificationPanel() {
         {notifications.map(([title, body]) => (
           <div
             key={title}
-            className="rounded-2xl border border-white/10 bg-white/10 p-3"
+            className="rounded-lg border border-white/10 bg-white/10 p-3"
           >
             <p className="text-sm font-semibold">{title}</p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -493,18 +459,8 @@ function HeroSection() {
     { label: "DSA", icon: Code2, className: "left-2 top-8", delay: 0 },
     { label: "SQL", icon: Database, className: "right-10 top-14", delay: 0.4 },
     { label: "AI", icon: BrainCircuit, className: "left-8 bottom-14", delay: 0.8 },
-    {
-      label: "Interview",
-      icon: MessageCircle,
-      className: "right-10 bottom-8",
-      delay: 1.1,
-    },
-    {
-      label: "Communication",
-      icon: Mic2,
-      className: "left-1/2 top-1 -translate-x-1/2",
-      delay: 1.5,
-    },
+    { label: "Interview", icon: MessageCircle, className: "right-10 bottom-8", delay: 1.1 },
+    { label: "Communication", icon: Mic2, className: "left-1/2 top-1 -translate-x-1/2", delay: 1.5 },
   ];
 
   return (
@@ -530,15 +486,22 @@ function HeroSection() {
               Productivity with AI.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <button className="group inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:-translate-y-0.5 sm:w-auto" style={{ background: primaryGradient }}>
+              <a
+                href="#dsa"
+                className="group inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:-translate-y-0.5 sm:w-auto"
+                style={{ background: primaryGradient }}
+              >
                 <Play className="mr-2 h-5 w-5 fill-white/20" />
                 Start Learning
                 <ChevronRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
-              </button>
-              <button className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white/80 px-5 py-3 text-sm font-bold text-slate-900 shadow-sm transition hover:-translate-y-0.5 dark:border-white/[0.12] dark:bg-white/10 dark:text-white sm:w-auto">
+              </a>
+              <a
+                href="#chatbot"
+                className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white/80 px-5 py-3 text-sm font-bold text-slate-900 shadow-sm transition hover:-translate-y-0.5 dark:border-white/[0.12] dark:bg-white/10 dark:text-white sm:w-auto"
+              >
                 <Bot className="mr-2 h-5 w-5 text-violet-400" />
                 Talk to AI Mentor
-              </button>
+              </a>
             </div>
             <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {[
@@ -548,7 +511,7 @@ function HeroSection() {
               ].map(([label, value, Icon]) => (
                 <div
                   key={label}
-                  className="rounded-2xl border border-slate-200 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.08]"
+                  className="rounded-lg border border-slate-200 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.08]"
                 >
                   <Icon className="mb-3 h-5 w-5 text-violet-400" />
                   <p className="text-2xl font-black">{value}</p>
@@ -626,7 +589,7 @@ function ProgressDashboard() {
                 Welcome Card
               </p>
               <h2 className="mt-2 text-3xl font-black">
-                Good Morning, Sonam 👋
+                Good Morning, Sonam {"\u{1F44B}"}
               </h2>
               <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Your AI mentor has balanced today across problem solving,
@@ -635,7 +598,7 @@ function ProgressDashboard() {
             </div>
             <IconBadge icon={Rocket} className="text-amber-200" />
           </div>
-          <div className="mt-6 rounded-3xl border border-white/10 bg-slate-950 p-5 text-white shadow-glow">
+          <div className="mt-6 rounded-lg border border-white/10 bg-slate-950 p-5 text-white shadow-glow">
             <div className="flex items-center justify-between">
               <p className="text-sm text-violet-100">Daily Motivation</p>
               <Sparkles className="h-5 w-5 text-violet-200" />
@@ -647,24 +610,24 @@ function ProgressDashboard() {
         </GlassCard>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {progressStats.map((stat) => (
-            <GlassCard key={stat.label} className="p-5">
+          {progressStats.map(([label, value, total, caption, Icon, color]) => (
+            <GlassCard key={label} className="p-5">
               <div className="flex items-start justify-between gap-3">
-                <IconBadge icon={stat.icon} className="text-violet-200" />
+                <IconBadge icon={Icon} className="text-violet-200" />
                 <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
-                  {stat.caption}
+                  {caption}
                 </span>
               </div>
               <p className="mt-5 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                {stat.label}
+                {label}
               </p>
               <div className="mt-2 flex items-end gap-2">
-                <span className="text-3xl font-black">{stat.value}</span>
+                <span className="text-3xl font-black">{value}</span>
                 <span className="pb-1 text-sm text-slate-500 dark:text-slate-400">
-                  / {stat.total}
+                  / {total}
                 </span>
               </div>
-              <ProgressBar value={stat.value} total={stat.total} color={stat.color} />
+              <ProgressBar value={value} total={total} color={color} />
             </GlassCard>
           ))}
         </div>
@@ -681,11 +644,11 @@ function CommunicationCoach() {
           <IconBadge icon={Mic2} className="mb-4 text-emerald-200" />
           <h3 className="text-2xl font-bold">AI Communication Coach</h3>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Practice crisp answers, grammar, better vocabulary, HR interview
-            confidence, and spoken fluency with instant AI feedback.
+            Correct grammar, improve answers, suggest better vocabulary, simulate
+            HR interviews, and build confidence for placement conversations.
           </p>
         </div>
-        <div className="rounded-3xl border border-emerald-300/20 bg-emerald-400/[0.12] p-5 text-center">
+        <div className="rounded-lg border border-emerald-300/20 bg-emerald-400/[0.12] p-5 text-center">
           <p className="text-sm text-emerald-800 dark:text-emerald-100">
             Confidence Score
           </p>
@@ -693,32 +656,51 @@ function CommunicationCoach() {
         </div>
       </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {communicationFeatures.map((item) => (
+        {communicationFeatures.map(([title, detail]) => (
           <div
-            key={item}
-            className="rounded-2xl border border-white/10 bg-white/[0.08] p-4"
+            key={title}
+            className="rounded-lg border border-white/10 bg-white/[0.08] p-4"
           >
             <CheckCircle2 className="mb-3 h-5 w-5 text-emerald-300" />
-            <p className="text-sm font-semibold">{item}</p>
+            <p className="text-sm font-semibold">{title}</p>
+            <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              {detail}
+            </p>
           </div>
         ))}
       </div>
-      <div className="mt-6 rounded-3xl border border-white/10 bg-slate-950/90 p-5 text-white">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
-          Daily Speaking Topic
-        </p>
-        <p className="mt-3 text-lg font-semibold">
-          "Describe a project where you solved a real user problem."
-        </p>
-        <div className="mt-4 grid gap-3 md:grid-cols-3">
+      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.1fr]">
+        <div className="rounded-lg border border-white/10 bg-slate-950/90 p-5 text-white">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
+            Daily Speaking Topic
+          </p>
+          <p className="mt-3 text-lg font-semibold">
+            Describe a project where you solved a real user problem.
+          </p>
+          <textarea
+            className="mt-5 min-h-[150px] w-full resize-none rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm outline-none focus:border-violet-300"
+            defaultValue="Today I practice React and DSA."
+          />
+          <button
+            className="mt-4 inline-flex items-center rounded-lg px-5 py-3 text-sm font-bold text-white"
+            style={{ background: primaryGradient }}
+          >
+            <Sparkles className="mr-2 h-5 w-5" />
+            Analyze Answer
+          </button>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
           {[
-            ["Grammar", "Replace passive phrasing with ownership."],
-            ["Vocabulary", "Use impact, iteration, adoption, measurable."],
-            ["Mock HR", "Follow-up: why did this project matter?"],
+            ["Corrected Version", "Today, I practiced React and DSA."],
+            ["Grammar Score", "8/10. Use past tense consistently."],
+            ["AI Suggestion", "Use stronger words like implemented, improved, optimized."],
+            ["Mock HR Follow-up", "What problem did your project solve for users?"],
           ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl bg-white/10 p-4">
+            <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
               <p className="text-sm font-bold">{title}</p>
-              <p className="mt-2 text-xs leading-5 text-slate-300">{text}</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                {text}
+              </p>
             </div>
           ))}
         </div>
@@ -732,22 +714,22 @@ function DsaHub() {
   const problem = dsaProblems[difficulty];
 
   return (
-    <GlassCard id="dsa-hub" className="p-5 sm:p-6">
+    <GlassCard id="dsa" className="p-5 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <IconBadge icon={Code2} className="mb-4 text-violet-200" />
           <h3 className="text-2xl font-bold">DSA Practice Hub</h3>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-            Topic-wise practice with AI hints, solution walkthroughs, and time
-            complexity analysis.
+            LeetCode-style daily questions with AI hints, solutions, time
+            complexity, and progress tracking.
           </p>
         </div>
-        <div className="flex rounded-2xl border border-white/10 bg-white/[0.08] p-1">
+        <div className="flex rounded-lg border border-white/10 bg-white/[0.08] p-1">
           {["Easy", "Medium", "Hard"].map((item) => (
             <button
               key={item}
               onClick={() => setDifficulty(item)}
-              className={`rounded-xl px-4 py-2 text-sm font-bold transition ${
+              className={`rounded-md px-4 py-2 text-sm font-bold transition ${
                 difficulty === item
                   ? "bg-white text-slate-950"
                   : "text-slate-500 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
@@ -769,7 +751,7 @@ function DsaHub() {
         ))}
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-3xl border border-white/10 bg-slate-950 p-5 text-white">
+        <div className="rounded-lg border border-white/10 bg-slate-950 p-5 text-white">
           <div className="mb-4 flex items-center justify-between">
             <p className="text-sm text-violet-200">Daily DSA Question</p>
             <span className="rounded-full bg-violet-500/25 px-3 py-1 text-xs font-bold">
@@ -778,122 +760,112 @@ function DsaHub() {
           </div>
           <h4 className="text-xl font-black">{problem.title}</h4>
           <p className="mt-3 text-sm leading-6 text-slate-300">{problem.prompt}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {problem.tags.map((tag) => (
-              <span key={tag} className="rounded-full bg-white/10 px-3 py-1 text-xs">
-                {tag}
-              </span>
-            ))}
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {[
-              ["AI Hint", "Start from a window or map."],
-              ["AI Solution", "Dry-run before final code."],
-              ["Complexity", problem.time],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl bg-white/10 p-3">
-                <p className="text-xs text-slate-400">{label}</p>
-                <p className="mt-1 text-sm font-bold">{value}</p>
+              ["AI Hint", "Use a sliding window and track latest indices."],
+              ["AI Solution", "Update left pointer only when repeat is inside window."],
+              ["Time Complexity", problem.time],
+            ].map(([title, text]) => (
+              <div key={title} className="rounded-lg bg-white/10 p-4">
+                <p className="text-sm font-bold">{title}</p>
+                <p className="mt-2 text-xs leading-5 text-slate-300">{text}</p>
               </div>
             ))}
           </div>
         </div>
-        <div className="code-editor">
-          <div className="code-editor-top">
-            <span />
-            <span />
-            <span />
-            <p>solution.js</p>
-          </div>
-          <pre>
+        <CodeEditor title="solution.js">
 {`function solve(input) {
   const seen = new Map();
+  let left = 0;
   let best = 0;
 
-  for (let right = 0, left = 0; right < input.length; right++) {
-    const value = input[right];
-    if (seen.has(value)) left = Math.max(left, seen.get(value) + 1);
-    seen.set(value, right);
+  for (let right = 0; right < input.length; right++) {
+    const char = input[right];
+    if (seen.has(char) && seen.get(char) >= left) {
+      left = seen.get(char) + 1;
+    }
+    seen.set(char, right);
     best = Math.max(best, right - left + 1);
   }
 
   return best;
 }`}
-          </pre>
-          <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-            <span>Acceptance {problem.acceptance}</span>
-            <span>Runtime beats 91%</span>
+        </CodeEditor>
+      </div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        {[
+          ["Acceptance", problem.acceptance],
+          ["Runtime Beat", "91%"],
+          ["Topic Progress", "68%"],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
+            <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
+            <p className="mt-1 text-2xl font-black">{value}</p>
           </div>
-        </div>
+        ))}
       </div>
     </GlassCard>
   );
 }
 
 function SqlArena() {
+  const [query, setQuery] = useState(
+    "SELECT s.name, s.branch, COUNT(a.id) AS applications\nFROM students s\nJOIN applications a ON a.student_id = s.id\nWHERE a.status IN ('Assessment', 'Interview')\nGROUP BY s.id, s.name, s.branch\nORDER BY applications DESC;",
+  );
+
   return (
-    <GlassCard id="sql-arena" className="p-5 sm:p-6">
+    <GlassCard id="sql" className="p-5 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <IconBadge icon={Database} className="mb-4 text-cyan-200" />
           <h3 className="text-2xl font-bold">SQL Practice Arena</h3>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-            Daily SQL challenges with schema visualization, execution output,
-            query correction, and optimization tips.
+            Daily SQL challenges with schema visualization, query execution,
+            correction, optimization, and result explanations.
           </p>
         </div>
-        <span className="rounded-full border border-cyan-300/30 bg-cyan-400/[0.12] px-4 py-2 text-sm font-bold text-cyan-800 dark:text-cyan-100">
+        <span className="rounded-full bg-cyan-400/15 px-4 py-2 text-xs font-bold text-cyan-700 dark:text-cyan-100">
           Daily Challenge
         </span>
       </div>
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="code-editor sql-editor">
-          <div className="code-editor-top">
-            <span />
-            <span />
-            <span />
-            <p>query.sql</p>
-          </div>
-          <pre>
-{`SELECT s.name, s.branch, COUNT(a.company) AS applications
-FROM students s
-JOIN applications a ON a.student_id = s.id
-WHERE a.status IN ('Assessment', 'Interview Scheduled')
-GROUP BY s.id, s.name, s.branch
-ORDER BY applications DESC;`}
-          </pre>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {[
-              ["Correction", "GROUP BY includes all selected fields."],
-              ["Optimization", "Index applications(status, student_id)."],
-              ["Result", "4 rows returned in 18 ms."],
-            ].map(([title, text]) => (
-              <div key={title} className="rounded-2xl bg-white/10 p-3">
-                <p className="text-xs text-cyan-100">{title}</p>
-                <p className="mt-1 text-sm font-semibold text-white">{text}</p>
-              </div>
-            ))}
-          </div>
+      <div className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div>
+          <p className="mb-3 text-sm font-bold">SQL Editor UI</p>
+          <textarea
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="min-h-[305px] w-full resize-none rounded-lg border border-white/10 bg-slate-950 p-4 font-mono text-sm leading-7 text-slate-100 outline-none focus:border-cyan-300"
+          />
         </div>
-        <div className="rounded-3xl border border-white/10 bg-white/[0.08] p-4">
-          <p className="mb-4 text-sm font-bold">Database Schema Visualizer</p>
-          <div className="space-y-3">
-            {sqlSchema.map((item) => (
-              <div
-                key={item.table}
-                className="rounded-2xl border border-white/10 bg-slate-950/90 p-4 text-white"
-              >
-                <p className="font-bold text-cyan-200">{item.table}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {item.fields.map((field) => (
-                    <span
-                      key={field}
-                      className="rounded-full bg-white/10 px-3 py-1 text-xs"
-                    >
-                      {field}
-                    </span>
-                  ))}
+        <div className="grid gap-4">
+          <div className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
+            <p className="text-sm font-bold">Database Schema Visualizer</p>
+            <div className="mt-4 grid gap-3">
+              {sqlSchema.map((table) => (
+                <div key={table.table} className="rounded-lg bg-slate-950/80 p-3 text-white">
+                  <p className="text-sm font-black">{table.table}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {table.fields.map((field) => (
+                      <span key={field} className="rounded-full bg-white/10 px-2 py-1 text-xs">
+                        {field}
+                      </span>
+                    ))}
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["Query Correction", "GROUP BY includes all selected fields."],
+              ["Optimization", "Index applications.student_id."],
+              ["Result Explanation", "Ranks students by active applications."],
+            ].map(([title, text]) => (
+              <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
+                <p className="text-xs font-bold">{title}</p>
+                <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  {text}
+                </p>
               </div>
             ))}
           </div>
@@ -905,28 +877,26 @@ ORDER BY applications DESC;`}
 
 function InterviewPrep() {
   const [tab, setTab] = useState("HR");
-  const active = interviewData[tab];
+  const data = interviewData[tab];
 
   return (
     <GlassCard id="interviews" className="p-5 sm:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <IconBadge icon={MessageSquareText} className="mb-4 text-amber-200" />
+          <IconBadge icon={MessageSquareText} className="mb-4 text-rose-200" />
           <h3 className="text-2xl font-bold">AI Interview Preparation</h3>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
             Mock rounds, communication rating, AI feedback, and targeted
             improvement suggestions.
           </p>
         </div>
-        <div className="flex rounded-2xl border border-white/10 bg-white/[0.08] p-1">
+        <div className="flex rounded-lg border border-white/10 bg-white/[0.08] p-1">
           {Object.keys(interviewData).map((item) => (
             <button
               key={item}
               onClick={() => setTab(item)}
-              className={`rounded-xl px-3 py-2 text-sm font-bold transition sm:px-4 ${
-                tab === item
-                  ? "bg-white text-slate-950"
-                  : "text-slate-500 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+              className={`rounded-md px-4 py-2 text-sm font-bold ${
+                tab === item ? "bg-white text-slate-950" : "text-slate-400"
               }`}
             >
               {item}
@@ -934,28 +904,22 @@ function InterviewPrep() {
           ))}
         </div>
       </div>
-      <div className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-3xl border border-white/10 bg-white/[0.08] p-5">
-          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-            {active.title}
-          </p>
-          <p className="mt-2 text-5xl font-black">{active.score}</p>
-          <ProgressBar value={active.score} color="from-amber-300 to-violet-500" />
-          <p className="mt-4 font-semibold">{active.rating}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {active.feedback}
-          </p>
+      <div className="mt-6 grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="rounded-lg border border-white/10 bg-slate-950 p-5 text-white">
+          <p className="text-sm text-violet-200">{data.title}</p>
+          <p className="mt-3 text-6xl font-black">{data.score}</p>
+          <p className="mt-2 text-sm text-slate-300">Communication Rating</p>
+          <ProgressBar value={data.score} color="from-violet-500 to-fuchsia-500" />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2">
           {[
-            ["Mock Interview", "Adaptive follow-ups with timing control", Bot],
-            ["AI Feedback", "Clarity, structure, relevance, confidence", Sparkles],
-            ["Communication Rating", "Tone, pace, filler words, vocabulary", Mic2],
-            ["Improvement Suggestions", "Next drills based on weak areas", Lightbulb],
-          ].map(([title, text, Icon]) => (
-            <div key={title} className="rounded-3xl border border-white/10 bg-white/[0.08] p-5">
-              <Icon className="mb-4 h-6 w-6 text-violet-300" />
-              <p className="font-bold">{title}</p>
+            ["Mock Interview", data.prompts.join(" | ")],
+            ["AI Feedback", data.feedback],
+            ["Communication Rating", data.rating],
+            ["Improvement Suggestions", "Use STAR, add metrics, and keep answers concise."],
+          ].map(([title, text]) => (
+            <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
+              <p className="text-sm font-bold">{title}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {text}
               </p>
@@ -963,83 +927,45 @@ function InterviewPrep() {
           ))}
         </div>
       </div>
-      <div className="mt-5 flex flex-wrap gap-2">
-        {active.prompts.map((prompt) => (
-          <span key={prompt} className="rounded-full border border-white/10 bg-white/[0.08] px-4 py-2 text-sm">
-            {prompt}
-          </span>
-        ))}
-      </div>
     </GlassCard>
   );
 }
 
 function PlannerAndTodo() {
   const [tasks, setTasks] = useState([
-    { id: 1, text: "Solve 3 DSA Questions", priority: "High", done: false },
-    { id: 2, text: "Practice SQL for 30 Minutes", priority: "Medium", done: true },
-    { id: 3, text: "Communication Practice", priority: "High", done: false },
-    { id: 4, text: "Apply for Jobs", priority: "Medium", done: false },
-    { id: 5, text: "Project Development", priority: "Low", done: false },
+    ["Revise sliding window", "High", "45 min"],
+    ["Build SQL joins notes", "Medium", "30 min"],
+    ["Record intro answer", "High", "15 min"],
   ]);
-  const [newTask, setNewTask] = useState("");
-  const [priority, setPriority] = useState("Medium");
-  const [editingId, setEditingId] = useState(null);
-  const [editingText, setEditingText] = useState("");
+  const [taskText, setTaskText] = useState("Apply to 2 internships");
 
   const addTask = () => {
-    if (!newTask.trim()) return;
-    setTasks((current) => [
-      ...current,
-      { id: Date.now(), text: newTask.trim(), priority, done: false },
-    ]);
-    setNewTask("");
-  };
-
-  const deleteTask = (id) => {
-    setTasks((current) => current.filter((task) => task.id !== id));
-  };
-
-  const saveEdit = (id) => {
-    if (!editingText.trim()) return;
-    setTasks((current) =>
-      current.map((task) =>
-        task.id === id ? { ...task, text: editingText.trim() } : task,
-      ),
-    );
-    setEditingId(null);
-    setEditingText("");
+    if (!taskText.trim()) return;
+    setTasks((current) => [...current, [taskText.trim(), "Medium", "25 min"]]);
+    setTaskText("");
   };
 
   return (
-    <section id="planner" className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+    <section id="planner" className="grid gap-4 xl:grid-cols-2">
       <GlassCard className="p-5 sm:p-6">
-        <IconBadge icon={CalendarCheck} className="mb-4 text-violet-200" />
+        <IconBadge icon={CalendarCheck} className="mb-4 text-emerald-200" />
         <h3 className="text-2xl font-bold">Smart Daily Planner</h3>
-        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          AI-generated daily targets adapt to progress, weak topics, pending
-          applications, and interview schedules.
+        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+          AI-generated daily targets based on your progress and weak areas.
         </p>
-        <div className="mt-6 space-y-3">
-          {tasks.slice(0, 5).map((task) => (
+        <div className="mt-5 space-y-3">
+          {plannerGoals.map(([goal, priority, time]) => (
             <label
-              key={task.id}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.08] p-4"
+              key={goal}
+              className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4"
             >
-              <input
-                type="checkbox"
-                checked={task.done}
-                onChange={() =>
-                  setTasks((current) =>
-                    current.map((item) =>
-                      item.id === task.id ? { ...item, done: !item.done } : item,
-                    ),
-                  )
-                }
-                className="h-5 w-5 rounded border-white/20 accent-violet-500"
-              />
-              <span className={task.done ? "text-slate-500 line-through" : ""}>
-                {task.text}
+              <input type="checkbox" className="h-5 w-5 accent-violet-500" />
+              <span className="flex-1 text-sm font-semibold">{goal}</span>
+              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[priority]}`}>
+                {priority}
+              </span>
+              <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
+                {time}
               </span>
             </label>
           ))}
@@ -1047,112 +973,48 @@ function PlannerAndTodo() {
       </GlassCard>
 
       <GlassCard className="p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <IconBadge icon={ListTodo} className="mb-4 text-emerald-200" />
-            <h3 className="text-2xl font-bold">AI To-Do List</h3>
-            <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-              Smart scheduling, priority tags, next-task suggestions, and time
-              estimates.
-            </p>
-          </div>
-          <div className="rounded-2xl bg-white/[0.08] p-3 text-center">
-            <p className="text-xs text-slate-500 dark:text-slate-400">Next</p>
-            <p className="text-sm font-bold">DSA sprint</p>
-          </div>
-        </div>
+        <IconBadge icon={ListChecks} className="mb-4 text-violet-200" />
+        <h3 className="text-2xl font-bold">AI To-Do List</h3>
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
           <input
-            value={newTask}
-            onChange={(event) => setNewTask(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") addTask();
-            }}
-            className="min-h-12 flex-1 rounded-2xl border border-slate-200 bg-white/70 px-4 text-sm outline-none transition focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
+            value={taskText}
+            onChange={(event) => setTaskText(event.target.value)}
+            className="min-h-12 flex-1 rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
             placeholder="Add task"
           />
-          <select
-            value={priority}
-            onChange={(event) => setPriority(event.target.value)}
-            className="min-h-12 rounded-2xl border border-slate-200 bg-white/70 px-4 text-sm outline-none dark:border-white/10 dark:bg-slate-900"
-          >
-            {Object.keys(priorityStyles).map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
           <button
             onClick={addTask}
-            className="inline-flex min-h-12 items-center justify-center rounded-2xl px-5 text-sm font-bold text-white"
+            className="inline-flex items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white"
             style={{ background: primaryGradient }}
           >
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="mr-2 h-5 w-5" />
             Add Task
           </button>
         </div>
         <div className="mt-5 space-y-3">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.08] p-4 sm:flex-row sm:items-center"
-            >
-              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[task.priority]}`}>
-                {task.priority}
+          {tasks.map(([task, priority, estimate], index) => (
+            <div key={`${task}-${index}`} className="flex items-center gap-3 rounded-lg bg-white/[0.08] p-3">
+              <Pencil className="h-4 w-4 text-slate-400" />
+              <p className="flex-1 text-sm font-semibold">{task}</p>
+              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[priority]}`}>
+                {priority}
               </span>
-              {editingId === task.id ? (
-                <input
-                  value={editingText}
-                  onChange={(event) => setEditingText(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") saveEdit(task.id);
-                  }}
-                  className="min-h-10 flex-1 rounded-xl border border-violet-300/40 bg-white/70 px-3 text-sm outline-none dark:bg-slate-900"
-                />
-              ) : (
-                <p className="flex-1 text-sm font-semibold">{task.text}</p>
-              )}
-              <div className="flex gap-2">
-                {editingId === task.id ? (
-                  <button
-                    onClick={() => saveEdit(task.id)}
-                    className="rounded-xl bg-emerald-500/20 p-2 text-emerald-300"
-                    aria-label="Save task"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setEditingId(task.id);
-                      setEditingText(task.text);
-                    }}
-                    className="rounded-xl bg-white/10 p-2"
-                    aria-label="Edit task"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                )}
-                <button
-                  onClick={() => deleteTask(task.id)}
-                  className="rounded-xl bg-rose-500/[0.15] p-2 text-rose-300"
-                  aria-label="Delete task"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+              <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
+                {estimate}
+              </span>
+              <button
+                onClick={() => setTasks((current) => current.filter((_, taskIndex) => taskIndex !== index))}
+                className="rounded-md bg-white/10 p-2"
+                aria-label="Delete task"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           ))}
         </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          {[
-            ["Rearrange Tasks", "DSA before SQL"],
-            ["Suggest Next Task", "Mock HR answer"],
-            ["Estimate Time", "2h 35m total"],
-          ].map(([title, value]) => (
-            <div key={title} className="rounded-2xl bg-white/[0.08] p-4">
-              <p className="text-xs text-slate-500 dark:text-slate-400">{title}</p>
-              <p className="mt-1 text-sm font-bold">{value}</p>
-            </div>
-          ))}
+        <div className="mt-4 rounded-lg border border-violet-300/20 bg-violet-400/[0.12] p-4 text-sm leading-6">
+          AI Suggestion: Rearrange tasks by interview impact, finish DSA before
+          lower-priority applications, and reserve 20 minutes for reflection.
         </div>
       </GlassCard>
     </section>
@@ -1165,18 +1027,19 @@ function RoadmapGenerator() {
 
   return (
     <GlassCard className="p-5 sm:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <IconBadge icon={Map} className="mb-4 text-violet-200" />
+          <IconBadge icon={Map} className="mb-4 text-cyan-200" />
           <h3 className="text-2xl font-bold">AI Roadmap Generator</h3>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-            Select a role and get a weekly learning path with skill progress.
+            Select a role and get a weekly roadmap, learning path, and skills
+            progress plan.
           </p>
         </div>
         <select
           value={role}
           onChange={(event) => setRole(event.target.value)}
-          className="min-h-12 rounded-2xl border border-slate-200 bg-white/70 px-4 text-sm font-bold outline-none dark:border-white/10 dark:bg-slate-900"
+          className="min-h-12 rounded-lg border border-slate-200 bg-white/70 px-4 text-sm font-bold outline-none dark:border-white/10 dark:bg-white/[0.08]"
         >
           {Object.keys(roadmapPlans).map((item) => (
             <option key={item}>{item}</option>
@@ -1184,16 +1047,13 @@ function RoadmapGenerator() {
         </select>
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-4">
-        {plan.map(([week, detail], index) => (
+        {plan.map(([week, detail]) => (
           <div key={week} className="roadmap-step">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-500 text-lg font-black text-white shadow-glow">
-              {index + 1}
-            </div>
-            <p className="mt-4 font-bold">{week}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <p className="text-sm font-black text-violet-300">{week}</p>
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
               {detail}
             </p>
-            <ProgressBar value={(index + 1) * 21} color="from-violet-500 to-fuchsia-500" />
+            <ProgressBar value={week === "Week 1" ? 86 : week === "Week 2" ? 52 : 22} />
           </div>
         ))}
       </div>
@@ -1203,24 +1063,24 @@ function RoadmapGenerator() {
 
 function ResumeAnalyzer() {
   return (
-    <GlassCard id="resume" className="p-5 sm:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <GlassCard id="career" className="p-5 sm:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <IconBadge icon={FileText} className="mb-4 text-rose-200" />
+          <IconBadge icon={FileText} className="mb-4 text-violet-200" />
           <h3 className="text-2xl font-bold">Resume Analyzer</h3>
-          <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Upload a resume PDF and view ATS score, missing skills, resume
-            suggestions, and improvement areas.
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+            Upload a resume PDF and get ATS score, missing skills, suggestions,
+            and improvement areas.
           </p>
         </div>
-        <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-white/10 bg-white/[0.08] px-5 py-3 text-sm font-bold transition hover:-translate-y-0.5">
+        <label className="inline-flex cursor-pointer items-center justify-center rounded-lg border border-white/10 bg-white/[0.08] px-5 py-3 text-sm font-bold transition hover:-translate-y-0.5">
           <UploadCloud className="mr-2 h-5 w-5 text-violet-300" />
           Upload Resume PDF
           <input type="file" accept="application/pdf" className="hidden" />
         </label>
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-[0.75fr_1.25fr]">
-        <div className="rounded-3xl border border-white/10 bg-slate-950 p-5 text-white">
+        <div className="rounded-lg border border-white/10 bg-slate-950 p-5 text-white">
           <p className="text-sm text-violet-200">ATS Score</p>
           <div className="mx-auto mt-5 h-52 max-w-52">
             <Doughnut
@@ -1247,10 +1107,10 @@ function ResumeAnalyzer() {
         <div className="grid gap-4 sm:grid-cols-3">
           {[
             ["Missing Skills", "Docker, Redis, CI/CD"],
-            ["Suggestions", "Add metrics to project bullets"],
+            ["Resume Suggestions", "Add metrics to project bullets"],
             ["Improvement Areas", "ATS keywords and role alignment"],
           ].map(([title, value]) => (
-            <div key={title} className="rounded-3xl border border-white/10 bg-white/[0.08] p-5">
+            <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-5">
               <ClipboardCheck className="mb-4 h-6 w-6 text-violet-300" />
               <p className="font-bold">{title}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -1266,7 +1126,7 @@ function ResumeAnalyzer() {
 
 function JobTracker() {
   return (
-    <GlassCard id="jobs" className="p-5 sm:p-6">
+    <GlassCard className="p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <IconBadge icon={Briefcase} className="mb-4 text-amber-200" />
@@ -1278,17 +1138,17 @@ function JobTracker() {
         </div>
       </div>
       <div className="mt-6 grid gap-4 xl:grid-cols-5">
-        {kanbanColumns.map((column) => (
-          <div key={column.title} className="rounded-3xl border border-white/10 bg-white/[0.08] p-4">
+        {kanbanColumns.map(([title, color, jobs]) => (
+          <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
             <div className="mb-4 flex items-center gap-2">
-              <span className={`h-3 w-3 rounded-full ${column.color}`} />
-              <p className="font-bold">{column.title}</p>
+              <span className={`h-3 w-3 rounded-full ${color}`} />
+              <p className="font-bold">{title}</p>
             </div>
             <div className="space-y-3">
-              {column.jobs.map((job) => (
+              {jobs.map((job) => (
                 <div
                   key={job}
-                  className="rounded-2xl border border-white/10 bg-white/10 p-3 text-sm font-semibold shadow-sm"
+                  className="rounded-lg border border-white/10 bg-white/10 p-3 text-sm font-semibold shadow-sm"
                 >
                   {job}
                   <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -1317,10 +1177,10 @@ function CompanyAndGithub() {
           <input
             value={company}
             onChange={(event) => setCompany(event.target.value)}
-            className="min-h-12 flex-1 rounded-2xl border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
+            className="min-h-12 flex-1 rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
             placeholder="Enter company name"
           />
-          <button className="rounded-2xl px-5 py-3 text-sm font-bold text-white" style={{ background: primaryGradient }}>
+          <button className="rounded-lg px-5 py-3 text-sm font-bold text-white" style={{ background: primaryGradient }}>
             Generate Prep
           </button>
         </div>
@@ -1332,7 +1192,7 @@ function CompanyAndGithub() {
             ["Hiring Process", "Assessment, technical, managerial, HR."],
             ["Salary Insights", "Entry package benchmark with role ranges."],
           ].map(([title, text]) => (
-            <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.08] p-4">
+            <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
               <p className="font-bold">{title}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {text}
@@ -1349,10 +1209,10 @@ function CompanyAndGithub() {
           <input
             value={repo}
             onChange={(event) => setRepo(event.target.value)}
-            className="min-h-12 flex-1 rounded-2xl border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
+            className="min-h-12 flex-1 rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
             placeholder="Enter GitHub repository URL"
           />
-          <button className="rounded-2xl px-5 py-3 text-sm font-bold text-white" style={{ background: primaryGradient }}>
+          <button className="rounded-lg px-5 py-3 text-sm font-bold text-white" style={{ background: primaryGradient }}>
             Analyze
           </button>
         </div>
@@ -1362,7 +1222,7 @@ function CompanyAndGithub() {
             ["Structure", 91, Layers],
             ["Best Practices", 76, ShieldCheck],
           ].map(([title, score, Icon]) => (
-            <div key={title} className="rounded-2xl border border-white/10 bg-white/[0.08] p-4">
+            <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
               <Icon className="mb-3 h-5 w-5 text-violet-300" />
               <p className="text-sm font-bold">{title}</p>
               <p className="mt-2 text-3xl font-black">{score}</p>
@@ -1370,7 +1230,7 @@ function CompanyAndGithub() {
             </div>
           ))}
         </div>
-        <div className="mt-4 rounded-2xl bg-white/[0.08] p-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <div className="mt-4 rounded-lg bg-white/[0.08] p-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
           Add tests for auth flows, split API utilities, and document deployment
           variables for interview-ready project storytelling.
         </div>
@@ -1399,14 +1259,14 @@ function LeetCodeTracker({ theme }) {
   );
 
   return (
-    <GlassCard className="p-5 sm:p-6">
+    <GlassCard id="analytics" className="p-5 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <IconBadge icon={LineChart} className="mb-4 text-emerald-200" />
           <h3 className="text-2xl font-bold">LeetCode Progress Tracker</h3>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
             Problems solved, difficulty counts, streak calendar, topic coverage,
-            and accuracy trend.
+            and accuracy graph.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
@@ -1415,7 +1275,7 @@ function LeetCodeTracker({ theme }) {
             ["Medium", 74, "text-amber-300"],
             ["Hard", 18, "text-rose-300"],
           ].map(([label, value, color]) => (
-            <div key={label} className="rounded-2xl bg-white/[0.08] px-4 py-3">
+            <div key={label} className="rounded-lg bg-white/[0.08] px-4 py-3">
               <p className={`text-xl font-black ${color}`}>{value}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
             </div>
@@ -1423,7 +1283,7 @@ function LeetCodeTracker({ theme }) {
         </div>
       </div>
       <div className="mt-6 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="h-72 rounded-3xl border border-white/10 bg-white/[0.08] p-4">
+        <div className="h-72 rounded-lg border border-white/10 bg-white/[0.08] p-4">
           <Line
             data={{
               labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
@@ -1443,7 +1303,7 @@ function LeetCodeTracker({ theme }) {
             options={chartOptions}
           />
         </div>
-        <div className="h-72 rounded-3xl border border-white/10 bg-white/[0.08] p-4">
+        <div className="h-72 rounded-lg border border-white/10 bg-white/[0.08] p-4">
           <Bar
             data={{
               labels: ["Array", "String", "Tree", "Graph", "DP"],
@@ -1452,7 +1312,7 @@ function LeetCodeTracker({ theme }) {
                   label: "Topic Coverage",
                   data: [88, 76, 59, 42, 51],
                   backgroundColor: ["#8B5CF6", "#22D3EE", "#34D399", "#F59E0B", "#FB7185"],
-                  borderRadius: 12,
+                  borderRadius: 8,
                 },
               ],
             }}
@@ -1464,7 +1324,7 @@ function LeetCodeTracker({ theme }) {
         {Array.from({ length: 28 }).map((_, index) => (
           <div
             key={index}
-            className={`aspect-square rounded-lg ${
+            className={`aspect-square rounded-md ${
               index % 5 === 0
                 ? "bg-violet-500"
                 : index % 3 === 0
@@ -1489,7 +1349,7 @@ function AchievementsAndReports({ theme }) {
         <h3 className="text-xl font-bold">Achievement Badges</h3>
         <div className="mt-5 space-y-3">
           {badges.map(([title, detail, Icon]) => (
-            <div key={title} className="flex items-center gap-3 rounded-2xl bg-white/[0.08] p-3">
+            <div key={title} className="flex items-center gap-3 rounded-lg bg-white/[0.08] p-3">
               <Icon className="h-5 w-5 text-amber-300" />
               <div>
                 <p className="text-sm font-bold">{title}</p>
@@ -1505,8 +1365,8 @@ function AchievementsAndReports({ theme }) {
         <h3 className="text-xl font-bold">Leaderboard</h3>
         <div className="mt-5 space-y-3">
           {leaderboard.map(([name, xp], index) => (
-            <div key={name} className="flex items-center gap-3 rounded-2xl bg-white/[0.08] p-3">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500 text-sm font-black text-white">
+            <div key={name} className="flex items-center gap-3 rounded-lg bg-white/[0.08] p-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-violet-500 text-sm font-black text-white">
                 {index + 1}
               </span>
               <p className="flex-1 text-sm font-bold">{name}</p>
@@ -1578,16 +1438,16 @@ function AiChatbot() {
   ];
 
   return (
-    <div className="fixed bottom-5 right-5 z-50">
+    <div id="chatbot" className="fixed bottom-5 right-5 z-50">
       {open ? (
         <motion.div
           initial={{ opacity: 0, y: 18, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="mb-4 flex h-[560px] w-[min(calc(100vw-2.5rem),420px)] flex-col overflow-hidden rounded-[2rem] border border-white/[0.12] bg-slate-950/[0.92] text-white shadow-glow backdrop-blur-2xl"
+          className="mb-4 flex h-[560px] w-[min(calc(100vw-2.5rem),420px)] flex-col overflow-hidden rounded-lg border border-white/[0.12] bg-slate-950/[0.94] text-white shadow-glow backdrop-blur-2xl"
         >
           <div className="flex items-center justify-between border-b border-white/10 p-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-500">
                 <Bot className="h-6 w-6" />
               </div>
               <div>
@@ -1597,7 +1457,7 @@ function AiChatbot() {
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="rounded-xl bg-white/10 p-2"
+              className="rounded-md bg-white/10 p-2"
               aria-label="Close AI chat"
             >
               <X className="h-5 w-5" />
@@ -1611,7 +1471,7 @@ function AiChatbot() {
                 className={`flex ${item.from === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[82%] rounded-3xl px-4 py-3 text-sm leading-6 ${
+                  className={`max-w-[82%] rounded-lg px-4 py-3 text-sm leading-6 ${
                     item.from === "user"
                       ? "bg-violet-500 text-white"
                       : "bg-white/10 text-slate-100"
@@ -1635,7 +1495,7 @@ function AiChatbot() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 p-2">
+            <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 p-2">
               <input
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
@@ -1647,7 +1507,7 @@ function AiChatbot() {
               />
               <button
                 onClick={sendMessage}
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-950"
+                className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-950"
                 aria-label="Send message"
               >
                 <Send className="h-5 w-5" />
@@ -1659,7 +1519,7 @@ function AiChatbot() {
 
       <button
         onClick={() => setOpen((value) => !value)}
-        className="flex h-16 w-16 items-center justify-center rounded-3xl text-white shadow-glow transition hover:-translate-y-1"
+        className="flex h-16 w-16 items-center justify-center rounded-lg text-white shadow-glow transition hover:-translate-y-1"
         style={{ background: primaryGradient }}
         aria-label="Open AI chatbot"
       >
@@ -1695,7 +1555,7 @@ export default function App() {
         </section>
 
         <section className="space-y-4 px-4 pb-6 sm:px-6 lg:px-8">
-          <SectionHeader eyebrow="Productivity" title="Daily Planning and Role Roadmaps" />
+          <SectionHeader eyebrow="Productivity" title="Planner, Tasks, and Role Roadmaps" />
           <PlannerAndTodo />
           <RoadmapGenerator />
         </section>
