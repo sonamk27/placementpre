@@ -1,5 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import {
   ArcElement,
   BarElement,
@@ -48,6 +57,7 @@ import {
   Rocket,
   Search,
   Send,
+  Settings,
   ShieldCheck,
   Sparkles,
   Star,
@@ -58,6 +68,7 @@ import {
   TrendingUp,
   Trophy,
   UploadCloud,
+  User,
   Users,
   X,
   Zap,
@@ -79,22 +90,23 @@ const primaryGradient =
   "linear-gradient(135deg, #6C63FF, #8B5CF6, #A855F7)";
 
 const navItems = [
-  { label: "Dashboard", href: "#dashboard", icon: BarChart3 },
-  { label: "Communication", href: "#communication", icon: Mic2 },
-  { label: "DSA Hub", href: "#dsa", icon: Code2 },
-  { label: "SQL Arena", href: "#sql", icon: Database },
-  { label: "Interviews", href: "#interviews", icon: MessageSquareText },
-  { label: "Planner", href: "#planner", icon: CalendarCheck },
-  { label: "Career Tools", href: "#career", icon: Briefcase },
-  { label: "Analytics", href: "#analytics", icon: LineChart },
+  { label: "Dashboard", path: "/dashboard", icon: BarChart3 },
+  { label: "DSA Practice", path: "/dsa", icon: Code2 },
+  { label: "SQL Practice", path: "/sql", icon: Database },
+  { label: "Communication Coach", path: "/communication", icon: Mic2 },
+  { label: "Interview Preparation", path: "/interview", icon: MessageSquareText },
+  { label: "AI Mentor", path: "/ai-mentor", icon: Bot },
+  { label: "Daily Planner", path: "/daily-planner", icon: CalendarCheck },
+  { label: "Profile", path: "/profile", icon: User },
+  { label: "Settings", path: "/settings", icon: Settings },
 ];
 
 const mobileNavItems = [
-  { label: "Home", href: "#dashboard", icon: BarChart3 },
-  { label: "DSA", href: "#dsa", icon: Code2 },
-  { label: "Coach", href: "#communication", icon: Mic2 },
-  { label: "Plan", href: "#planner", icon: CalendarCheck },
-  { label: "Career", href: "#career", icon: Briefcase },
+  { label: "Home", path: "/dashboard", icon: BarChart3 },
+  { label: "DSA", path: "/dsa", icon: Code2 },
+  { label: "SQL", path: "/sql", icon: Database },
+  { label: "Coach", path: "/communication", icon: Mic2 },
+  { label: "Plan", path: "/daily-planner", icon: CalendarCheck },
 ];
 
 const progressStats = [
@@ -104,6 +116,14 @@ const progressStats = [
   ["Interview Practice", 63, 100, "2 mock rounds", MessageCircle, "from-amber-300 to-orange-500"],
   ["Daily Streak", 21, 30, "21 days active", Flame, "from-rose-400 to-pink-500"],
 ];
+
+const progressRoutes = {
+  "DSA Questions Solved": "/dsa",
+  "SQL Problems Solved": "/sql",
+  "Communication Practice": "/communication",
+  "Interview Practice": "/interview",
+  "Daily Streak": "/daily-planner",
+};
 
 const communicationFeatures = [
   ["Daily Speaking Topic", "Describe a project where you solved a real user problem."],
@@ -343,20 +363,22 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
           </div>
 
           <nav className="mt-8 space-y-2">
-            {navItems.map((item, index) => (
-              <a
+            {navItems.map((item) => (
+              <NavLink
                 key={item.label}
-                href={item.href}
-                className={`group flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
-                  index === 0
-                    ? "bg-violet-500/[0.16] text-violet-700 ring-1 ring-violet-400/30 dark:text-violet-100"
-                    : "text-slate-600 hover:bg-slate-900/5 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-                }`}
+                to={item.path}
+                className={({ isActive }) =>
+                  `group flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition ${
+                    isActive
+                      ? "bg-violet-500/[0.16] text-violet-700 ring-1 ring-violet-400/30 dark:text-violet-100"
+                      : "text-slate-600 hover:bg-slate-900/5 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                  }`
+                }
                 onClick={() => setMobileOpen(false)}
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
-              </a>
+              </NavLink>
             ))}
           </nav>
 
@@ -432,14 +454,18 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
         </div>
         <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-lg border border-white/10 bg-slate-950/90 p-1 shadow-glow backdrop-blur-2xl lg:hidden">
           {mobileNavItems.map((item) => (
-            <a
+            <NavLink
               key={item.label}
-              href={item.href}
-              className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[10px] font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
+              to={item.path}
+              className={({ isActive }) =>
+                `flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[10px] font-bold transition hover:bg-white/10 hover:text-white ${
+                  isActive ? "bg-white/10 text-white" : "text-slate-300"
+                }`
+              }
             >
               <item.icon className="h-4 w-4" />
               <span className="max-w-full truncate">{item.label}</span>
-            </a>
+            </NavLink>
           ))}
         </nav>
       </div>
@@ -506,22 +532,22 @@ function HeroSection() {
               Productivity with AI.
             </p>
             <div className="mt-5 flex flex-col gap-3 sm:mt-7 sm:flex-row">
-              <a
-                href="#dsa"
+              <Link
+                to="/dsa"
                 className="group inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:-translate-y-0.5 sm:w-auto"
                 style={{ background: primaryGradient }}
               >
                 <Play className="mr-2 h-5 w-5 fill-white/20" />
                 Start Learning
                 <ChevronRight className="ml-2 h-4 w-4 transition group-hover:translate-x-1" />
-              </a>
-              <a
-                href="#chatbot"
+              </Link>
+              <Link
+                to="/ai-mentor"
                 className="inline-flex w-full items-center justify-center rounded-lg border border-slate-200 bg-white/80 px-5 py-3 text-sm font-bold text-slate-900 shadow-sm transition hover:-translate-y-0.5 dark:border-white/[0.12] dark:bg-white/10 dark:text-white sm:w-auto"
               >
                 <Bot className="mr-2 h-5 w-5 text-violet-400" />
                 Talk to AI Mentor
-              </a>
+              </Link>
             </div>
             <div className="mt-5 grid grid-cols-3 gap-2 sm:mt-8 sm:gap-3">
               {[
@@ -631,24 +657,30 @@ function ProgressDashboard() {
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-3 xl:gap-4">
           {progressStats.map(([label, value, total, caption, Icon, color]) => (
-            <GlassCard key={label} className="p-4 sm:p-5">
-              <div className="flex items-start justify-between gap-3">
-                <IconBadge icon={Icon} className="text-violet-200" />
-                <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold leading-4 text-slate-500 dark:text-slate-300 sm:px-3 sm:text-xs">
-                  {caption}
-                </span>
-              </div>
-              <p className="mt-4 text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300 sm:mt-5 sm:text-sm">
-                {label}
-              </p>
-              <div className="mt-2 flex items-end gap-2">
-                <span className="text-2xl font-black sm:text-3xl">{value}</span>
-                <span className="pb-1 text-sm text-slate-500 dark:text-slate-400">
-                  / {total}
-                </span>
-              </div>
-              <ProgressBar value={value} total={total} color={color} />
-            </GlassCard>
+            <Link
+              key={label}
+              to={progressRoutes[label]}
+              className="block h-full text-current no-underline"
+            >
+              <GlassCard className="h-full p-4 sm:p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <IconBadge icon={Icon} className="text-violet-200" />
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold leading-4 text-slate-500 dark:text-slate-300 sm:px-3 sm:text-xs">
+                    {caption}
+                  </span>
+                </div>
+                <p className="mt-4 text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300 sm:mt-5 sm:text-sm">
+                  {label}
+                </p>
+                <div className="mt-2 flex items-end gap-2">
+                  <span className="text-2xl font-black sm:text-3xl">{value}</span>
+                  <span className="pb-1 text-sm text-slate-500 dark:text-slate-400">
+                    / {total}
+                  </span>
+                </div>
+                <ProgressBar value={value} total={total} color={color} />
+              </GlassCard>
+            </Link>
           ))}
         </div>
       </div>
@@ -1549,51 +1581,350 @@ function AiChatbot() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
+
+function PageFrame({ eyebrow, title, children }) {
+  return (
+    <main className="space-y-4 px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">
+      <SectionHeader eyebrow={eyebrow} title={title} />
+      {children}
+    </main>
+  );
+}
+
+function DashboardPage() {
+  return (
+    <main className="pb-28 lg:pb-10">
+      <HeroSection />
+      <ProgressDashboard />
+    </main>
+  );
+}
+
+function CommunicationPage() {
+  return (
+    <PageFrame eyebrow="AI coaching" title="Communication Coach">
+      <CommunicationCoach />
+    </PageFrame>
+  );
+}
+
+function DsaPage({ theme }) {
+  return (
+    <PageFrame eyebrow="DSA practice" title="DSA Practice Hub">
+      <DsaHub />
+      <LeetCodeTracker theme={theme} />
+    </PageFrame>
+  );
+}
+
+function SqlPage() {
+  return (
+    <PageFrame eyebrow="SQL practice" title="SQL Practice Arena">
+      <SqlArena />
+    </PageFrame>
+  );
+}
+
+function InterviewPage() {
+  return (
+    <PageFrame eyebrow="Interview preparation" title="AI Interview Preparation">
+      <InterviewPrep />
+    </PageFrame>
+  );
+}
+
+function DailyPlannerPage() {
+  return (
+    <PageFrame eyebrow="Productivity" title="Planner, Tasks, and Role Roadmaps">
+      <PlannerAndTodo />
+      <RoadmapGenerator />
+    </PageFrame>
+  );
+}
+
+function AiMentorPage() {
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      from: "ai",
+      text: "Hi Sonam, I can help with DSA, SQL, interviews, communication, resumes, planning, and project ideas.",
+    },
+  ]);
+
+  const sendMessage = () => {
+    if (!message.trim()) return;
+    const userText = message.trim();
+    setMessages((current) => [
+      ...current,
+      { from: "user", text: userText },
+      {
+        from: "ai",
+        text: `Great. I would turn "${userText}" into a focused practice plan with one concept review, one timed drill, and one feedback loop.`,
+      },
+    ]);
+    setMessage("");
+  };
+
+  const quickPrompts = [
+    "Give me a DSA hint",
+    "Improve my HR answer",
+    "Review SQL query",
+    "Plan today's study",
+  ];
+
+  return (
+    <PageFrame eyebrow="AI mentor" title="PrepMate AI Mentor">
+      <div className="flex h-[calc(100vh-220px)] min-h-[560px] flex-col overflow-hidden rounded-lg border border-white/[0.12] bg-slate-950/[0.94] text-white shadow-glow backdrop-blur-2xl">
+        <div className="flex items-center justify-between border-b border-white/10 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-violet-500">
+              <Bot className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="font-bold">PrepMate AI Mentor</p>
+              <p className="text-xs text-emerald-300">Online</p>
+            </div>
+          </div>
+          <div className="rounded-lg border border-violet-300/30 bg-violet-500/[0.12] px-4 py-2 text-sm font-semibold text-violet-100">
+            6,980 XP
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-3 overflow-auto p-4">
+          {messages.map((item, index) => (
+            <div
+              key={`${item.text}-${index}`}
+              className={`flex ${item.from === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[82%] rounded-lg px-4 py-3 text-sm leading-6 ${
+                  item.from === "user"
+                    ? "bg-violet-500 text-white"
+                    : "bg-white/10 text-slate-100"
+                }`}
+              >
+                {item.text}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-white/10 p-4">
+          <div className="mb-3 flex gap-2 overflow-auto">
+            {quickPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => setMessage(prompt)}
+                className="shrink-0 rounded-full bg-white/10 px-3 py-2 text-xs font-semibold"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 p-2">
+            <input
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") sendMessage();
+              }}
+              className="min-h-11 flex-1 bg-transparent px-3 text-sm outline-none"
+              placeholder="Ask anything about placement prep"
+            />
+            <button
+              onClick={sendMessage}
+              className="flex h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-950"
+              aria-label="Send message"
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </PageFrame>
+  );
+}
+
+function ProfilePage({ theme }) {
+  return (
+    <PageFrame eyebrow="Profile" title="Student Profile and Career Tools">
+      <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+        <GlassCard className="p-5 sm:p-6">
+          <div className="flex items-start gap-4">
+            <div
+              className="flex h-16 w-16 items-center justify-center rounded-lg text-white shadow-glow"
+              style={{ background: primaryGradient }}
+            >
+              <User className="h-8 w-8" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Placement Profile
+              </p>
+              <h3 className="mt-2 text-3xl font-black">Sonam</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                MERN-focused placement preparation with strong DSA, SQL,
+                communication, and project storytelling goals.
+              </p>
+            </div>
+          </div>
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            {[
+              ["XP", "6,980"],
+              ["Readiness", "82%"],
+              ["Streak", "21 days"],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
+                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+                <p className="mt-1 text-xl font-black">{value}</p>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5 sm:p-6">
+          <IconBadge icon={Target} className="mb-4 text-violet-200" />
+          <h3 className="text-2xl font-bold">Preparation Snapshot</h3>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {progressStats.slice(0, 4).map(([label, value, total, caption, Icon, color]) => (
+              <div key={label} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
+                <div className="flex items-center gap-3">
+                  <Icon className="h-5 w-5 text-violet-300" />
+                  <p className="text-sm font-bold">{label}</p>
+                </div>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{caption}</p>
+                <ProgressBar value={value} total={total} color={color} />
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+      </section>
+      <ResumeAnalyzer />
+      <JobTracker />
+      <CompanyAndGithub />
+      <AchievementsAndReports theme={theme} />
+    </PageFrame>
+  );
+}
+
+function SettingsPage({ theme, setTheme }) {
+  return (
+    <PageFrame eyebrow="Settings" title="Workspace Settings">
+      <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+        <GlassCard className="p-5 sm:p-6">
+          <IconBadge icon={Settings} className="mb-4 text-violet-200" />
+          <h3 className="text-2xl font-bold">Appearance</h3>
+          <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Keep the workspace theme aligned with your study environment.
+          </p>
+          <button
+            className="mt-5 inline-flex items-center rounded-lg px-5 py-3 text-sm font-bold text-white"
+            style={{ background: primaryGradient }}
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            {theme === "dark" ? (
+              <Sun className="mr-2 h-5 w-5" />
+            ) : (
+              <Moon className="mr-2 h-5 w-5" />
+            )}
+            {theme === "dark" ? "Switch to Light" : "Switch to Dark"}
+          </button>
+        </GlassCard>
+
+        <GlassCard className="p-5 sm:p-6">
+          <IconBadge icon={Bell} className="mb-4 text-emerald-200" />
+          <h3 className="text-2xl font-bold">Notifications</h3>
+          <div className="mt-5 space-y-3">
+            {[
+              ["Mock interview reminders", true],
+              ["Daily planner digest", true],
+              ["Resume and application alerts", false],
+            ].map(([label, checked]) => (
+              <label
+                key={label}
+                className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4"
+              >
+                <input
+                  type="checkbox"
+                  defaultChecked={checked}
+                  className="h-5 w-5 accent-violet-500"
+                />
+                <span className="text-sm font-semibold">{label}</span>
+              </label>
+            ))}
+          </div>
+        </GlassCard>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-3">
+        {[
+          ["Learning Mode", "Balanced practice across DSA, SQL, communication, and interviews.", BrainCircuit],
+          ["Privacy", "Keep mentor chats and planner tasks scoped to this workspace.", ShieldCheck],
+          ["Focus Defaults", "Use deep work blocks with priority tasks and progress signals.", Sparkles],
+        ].map(([title, detail, Icon]) => (
+          <GlassCard key={title} className="p-5 sm:p-6">
+            <IconBadge icon={Icon} className="mb-4 text-cyan-200" />
+            <h3 className="text-xl font-bold">{title}</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              {detail}
+            </p>
+          </GlassCard>
+        ))}
+      </section>
+    </PageFrame>
+  );
+}
+
+function AppRoutes({ theme, setTheme }) {
+  const location = useLocation();
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dsa" element={<DsaPage theme={theme} />} />
+        <Route path="/sql" element={<SqlPage />} />
+        <Route path="/communication" element={<CommunicationPage />} />
+        <Route path="/interview" element={<InterviewPage />} />
+        <Route path="/ai-mentor" element={<AiMentorPage />} />
+        <Route path="/daily-planner" element={<DailyPlannerPage />} />
+        <Route path="/profile" element={<ProfilePage theme={theme} />} />
+        <Route
+          path="/settings"
+          element={<SettingsPage theme={theme} setTheme={setTheme} />}
+        />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+      {location.pathname !== "/ai-mentor" ? <AiChatbot /> : null}
+    </>
+  );
+}
+
 export default function App() {
   const [theme, setTheme] = useState("dark");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   return (
-    <AppShell
-      theme={theme}
-      setTheme={setTheme}
-      notificationsOpen={notificationsOpen}
-      setNotificationsOpen={setNotificationsOpen}
-    >
-      <main className="pb-28 lg:pb-10">
-        <HeroSection />
-        <ProgressDashboard />
-
-        <section className="space-y-4 px-4 pb-6 sm:px-6 lg:px-8">
-          <SectionHeader eyebrow="AI coaching" title="Core Preparation Studios" />
-          <CommunicationCoach />
-          <div className="grid gap-4 xl:grid-cols-2">
-            <DsaHub />
-            <SqlArena />
-          </div>
-          <InterviewPrep />
-        </section>
-
-        <section className="space-y-4 px-4 pb-6 sm:px-6 lg:px-8">
-          <SectionHeader eyebrow="Productivity" title="Planner, Tasks, and Role Roadmaps" />
-          <PlannerAndTodo />
-          <RoadmapGenerator />
-        </section>
-
-        <section className="space-y-4 px-4 pb-6 sm:px-6 lg:px-8">
-          <SectionHeader eyebrow="Career pipeline" title="Resume, Jobs, Companies, and Projects" />
-          <ResumeAnalyzer />
-          <JobTracker />
-          <CompanyAndGithub />
-        </section>
-
-        <section className="space-y-4 px-4 pb-10 sm:px-6 lg:px-8">
-          <SectionHeader eyebrow="Analytics" title="Study Analytics and Weekly Growth" />
-          <LeetCodeTracker theme={theme} />
-          <AchievementsAndReports theme={theme} />
-        </section>
-      </main>
-      <AiChatbot />
-    </AppShell>
+    <BrowserRouter>
+      <ScrollToTop />
+      <AppShell
+        theme={theme}
+        setTheme={setTheme}
+        notificationsOpen={notificationsOpen}
+        setNotificationsOpen={setNotificationsOpen}
+      >
+        <AppRoutes theme={theme} setTheme={setTheme} />
+      </AppShell>
+    </BrowserRouter>
   );
 }
