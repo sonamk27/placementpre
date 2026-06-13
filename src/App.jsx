@@ -89,6 +89,14 @@ const navItems = [
   { label: "Analytics", href: "#analytics", icon: LineChart },
 ];
 
+const mobileNavItems = [
+  { label: "Home", href: "#dashboard", icon: BarChart3 },
+  { label: "DSA", href: "#dsa", icon: Code2 },
+  { label: "Coach", href: "#communication", icon: Mic2 },
+  { label: "Plan", href: "#planner", icon: CalendarCheck },
+  { label: "Career", href: "#career", icon: Briefcase },
+];
+
 const progressStats = [
   ["DSA Questions Solved", 74, 100, "6 solved today", Code2, "from-violet-500 to-fuchsia-500"],
   ["SQL Problems Solved", 48, 60, "3 query drills", Database, "from-cyan-400 to-blue-500"],
@@ -259,7 +267,7 @@ function SectionHeader({ eyebrow, title, action }) {
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">
           {eyebrow}
         </p>
-        <h2 className="text-2xl font-black text-slate-950 dark:text-paper">
+        <h2 className="text-xl font-black text-slate-950 dark:text-paper sm:text-2xl">
           {title}
         </h2>
       </div>
@@ -422,6 +430,18 @@ function AppShell({ theme, setTheme, notificationsOpen, setNotificationsOpen, ch
 
           {children}
         </div>
+        <nav className="fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 rounded-lg border border-white/10 bg-slate-950/90 p-1 shadow-glow backdrop-blur-2xl lg:hidden">
+          {mobileNavItems.map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-[10px] font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
+            >
+              <item.icon className="h-4 w-4" />
+              <span className="max-w-full truncate">{item.label}</span>
+            </a>
+          ))}
+        </nav>
       </div>
     </div>
   );
@@ -464,12 +484,12 @@ function HeroSection() {
   ];
 
   return (
-    <section id="dashboard" className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <GlassCard className="relative w-full max-w-[calc(100vw-2rem)] overflow-hidden p-5 sm:max-w-none sm:p-7 lg:p-8">
+    <section id="dashboard" className="px-3 py-4 sm:px-6 lg:px-8 lg:py-8">
+      <GlassCard className="relative w-full max-w-[calc(100vw-1.5rem)] overflow-hidden p-4 sm:max-w-none sm:p-7 lg:p-8">
         <div className="absolute inset-0 hero-mesh opacity-80" />
-        <div className="relative grid min-w-0 grid-cols-1 items-center gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="relative grid min-w-0 grid-cols-1 items-center gap-5 xl:grid-cols-[1.05fr_0.95fr] xl:gap-8">
           <div className="min-w-0">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-violet-300/30 bg-violet-500/[0.14] px-4 py-2 text-sm font-semibold text-violet-700 dark:text-violet-100">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-300/30 bg-violet-500/[0.14] px-3 py-2 text-xs font-semibold text-violet-700 dark:text-violet-100 sm:mb-5 sm:px-4 sm:text-sm">
               <Sparkles className="h-4 w-4" />
               AI-powered placement preparation
             </div>
@@ -477,15 +497,15 @@ function HeroSection() {
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7 }}
-              className="max-w-3xl text-4xl font-black leading-tight text-slate-950 dark:text-paper sm:text-5xl lg:text-6xl"
+              className="max-w-3xl text-[2rem] font-black leading-[1.12] text-slate-950 dark:text-paper sm:text-5xl lg:text-6xl"
             >
               Your Personal AI Placement Mentor
             </motion.h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">
+            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:mt-5 sm:text-lg sm:leading-8">
               Master DSA, SQL, Communication Skills, Interviews, Projects, and
               Productivity with AI.
             </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-5 flex flex-col gap-3 sm:mt-7 sm:flex-row">
               <a
                 href="#dsa"
                 className="group inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:-translate-y-0.5 sm:w-auto"
@@ -503,7 +523,7 @@ function HeroSection() {
                 Talk to AI Mentor
               </a>
             </div>
-            <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="mt-5 grid grid-cols-3 gap-2 sm:mt-8 sm:gap-3">
               {[
                 ["Placement Readiness", "82%", TrendingUp],
                 ["Daily Focus", "4h 10m", Timer],
@@ -511,11 +531,11 @@ function HeroSection() {
               ].map(([label, value, Icon]) => (
                 <div
                   key={label}
-                  className="rounded-lg border border-slate-200 bg-white/70 p-4 dark:border-white/10 dark:bg-white/[0.08]"
+                  className="min-w-0 rounded-lg border border-slate-200 bg-white/70 p-3 dark:border-white/10 dark:bg-white/[0.08] sm:p-4"
                 >
-                  <Icon className="mb-3 h-5 w-5 text-violet-400" />
-                  <p className="text-2xl font-black">{value}</p>
-                  <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                  <Icon className="mb-2 h-4 w-4 text-violet-400 sm:mb-3 sm:h-5 sm:w-5" />
+                  <p className="text-xl font-black sm:text-2xl">{value}</p>
+                  <p className="mt-1 text-[10px] font-medium leading-4 text-slate-500 dark:text-slate-400 sm:text-xs">
                     {label}
                   </p>
                 </div>
@@ -523,7 +543,7 @@ function HeroSection() {
             </div>
           </div>
 
-          <div className="relative min-h-[360px] min-w-0 overflow-hidden sm:overflow-visible">
+          <div className="relative min-h-[220px] min-w-0 overflow-hidden sm:min-h-[320px] sm:overflow-visible xl:min-h-[360px]">
             <div className="hero-illustration mx-auto">
               <motion.div
                 className="student-orbit"
@@ -609,20 +629,20 @@ function ProgressDashboard() {
           </div>
         </GlassCard>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-2 xl:grid-cols-3 xl:gap-4">
           {progressStats.map(([label, value, total, caption, Icon, color]) => (
-            <GlassCard key={label} className="p-5">
+            <GlassCard key={label} className="p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
                 <IconBadge icon={Icon} className="text-violet-200" />
-                <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-slate-500 dark:text-slate-300">
+                <span className="rounded-full bg-white/10 px-2 py-1 text-[10px] font-semibold leading-4 text-slate-500 dark:text-slate-300 sm:px-3 sm:text-xs">
                   {caption}
                 </span>
               </div>
-              <p className="mt-5 text-sm font-semibold text-slate-600 dark:text-slate-300">
+              <p className="mt-4 text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300 sm:mt-5 sm:text-sm">
                 {label}
               </p>
               <div className="mt-2 flex items-end gap-2">
-                <span className="text-3xl font-black">{value}</span>
+                <span className="text-2xl font-black sm:text-3xl">{value}</span>
                 <span className="pb-1 text-sm text-slate-500 dark:text-slate-400">
                   / {total}
                 </span>
@@ -1438,12 +1458,12 @@ function AiChatbot() {
   ];
 
   return (
-    <div id="chatbot" className="fixed bottom-5 right-5 z-50">
+    <div id="chatbot" className="fixed bottom-20 right-4 z-50 sm:bottom-5 sm:right-5">
       {open ? (
         <motion.div
           initial={{ opacity: 0, y: 18, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="mb-4 flex h-[560px] w-[min(calc(100vw-2.5rem),420px)] flex-col overflow-hidden rounded-lg border border-white/[0.12] bg-slate-950/[0.94] text-white shadow-glow backdrop-blur-2xl"
+          className="mb-4 flex h-[min(70vh,520px)] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-white/[0.12] bg-slate-950/[0.94] text-white shadow-glow backdrop-blur-2xl sm:h-[560px] sm:w-[min(calc(100vw-2.5rem),420px)]"
         >
           <div className="flex items-center justify-between border-b border-white/10 p-4">
             <div className="flex items-center gap-3">
@@ -1519,11 +1539,11 @@ function AiChatbot() {
 
       <button
         onClick={() => setOpen((value) => !value)}
-        className="flex h-16 w-16 items-center justify-center rounded-lg text-white shadow-glow transition hover:-translate-y-1"
+        className="flex h-12 w-12 items-center justify-center rounded-lg text-white shadow-glow transition hover:-translate-y-1 sm:h-16 sm:w-16"
         style={{ background: primaryGradient }}
         aria-label="Open AI chatbot"
       >
-        <MessageCircle className="h-7 w-7" />
+        <MessageCircle className="h-6 w-6 sm:h-7 sm:w-7" />
       </button>
     </div>
   );
@@ -1540,7 +1560,7 @@ export default function App() {
       notificationsOpen={notificationsOpen}
       setNotificationsOpen={setNotificationsOpen}
     >
-      <main className="pb-10">
+      <main className="pb-28 lg:pb-10">
         <HeroSection />
         <ProgressDashboard />
 

@@ -360,8 +360,8 @@ button {
 @media (max-width: 640px) {
   main > section {
     width: 100%;
-    max-width: 390px;
-    margin-inline: 0 auto;
+    max-width: none;
+    margin-inline: 0;
   }
 
   .glass-card {
@@ -369,28 +369,95 @@ button {
   }
 
   .hero-illustration {
-    min-height: 320px;
+    min-height: 220px;
+    max-width: 340px;
+  }
+
+  .student-orbit {
+    inset: 28px 10px 8px;
+    border-radius: 28px;
   }
 
   .student-card {
-    width: min(78vw, 310px);
+    height: 190px;
+    width: min(84vw, 300px);
+    translate: -50% -39%;
+    border-radius: 24px;
   }
 
   .student-head {
-    left: 52px;
+    left: 42px;
+    top: 42px;
+    height: 48px;
+    width: 48px;
+  }
+
+  .student-head::before {
+    height: 22px;
   }
 
   .student-body {
-    left: 30px;
+    left: 26px;
+    top: 92px;
+    height: 82px;
+    width: 92px;
+    border-radius: 30px 30px 18px 18px;
+  }
+
+  .student-scarf {
+    left: 34px;
+    height: 70px;
+    width: 17px;
   }
 
   .laptop {
-    right: 26px;
-    width: 170px;
+    right: 22px;
+    bottom: 39px;
+    width: 145px;
+  }
+
+  .laptop-screen {
+    height: 84px;
+    padding: 16px;
+    border-radius: 14px 14px 8px 8px;
+  }
+
+  .laptop-screen span {
+    height: 6px;
+    margin-bottom: 9px;
+  }
+
+  .laptop-base {
+    height: 12px;
   }
 
   .notes-panel {
-    right: 42px;
-    width: 120px;
+    right: 34px;
+    top: 34px;
+    width: 100px;
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  .notes-panel div {
+    height: 5px;
+    margin-bottom: 7px;
+  }
+
+  .floating-chip {
+    min-height: 30px;
+    padding: 7px 9px;
+    font-size: 10px;
+    gap: 5px;
+  }
+
+  .floating-chip svg {
+    height: 12px;
+    width: 12px;
+  }
+
+  .hero-illustration > .floating-chip:nth-of-type(5),
+  .hero-illustration > .floating-chip:nth-of-type(7) {
+    display: none;
   }
 }
