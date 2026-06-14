@@ -29,6 +29,7 @@ export const config = {
     process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/prepmate_ai",
   jwtSecret: process.env.JWT_SECRET || "dev-only-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  guestUserId: process.env.GUEST_USER_ID || "000000000000000000000001",
   corsOrigins: parseOrigins(process.env.CLIENT_ORIGIN),
   openai: {
     apiKey: process.env.OPENAI_API_KEY,

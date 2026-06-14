@@ -8,7 +8,6 @@ import {
   Route,
   Routes,
   useLocation,
-  useNavigate,
 } from "react-router-dom";
 import {
   ArcElement,
@@ -74,11 +73,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import {
-  authApi,
-  communicationApi,
-  setAuthSession,
-} from "./api";
+import { communicationApi } from "./api";
 
 ChartJS.register(
   CategoryScale,
@@ -756,6 +751,15 @@ function CommunicationCoach() {
     setCoachError("");
 
     try {
+      const health = await communicationApi.health();
+
+      if (health.database !== "connected") {
+        setCoachError(
+          "Database is not connected. Start MongoDB before analyzing and saving answers.",
+        );
+        return;
+      }
+
       const result = await communicationApi.analyze({
         message,
         topic: starter.topic,
@@ -2028,108 +2032,7 @@ function SettingsPage({ theme, setTheme }) {
   );
 }
 
-function AuthPage({ onAuth }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({
-    name: "Sonam",
-    email: "",
-    password: "",
-  });
-  const [loading, setLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
-
-  const updateField = (field, value) => {
-    setForm((current) => ({ ...current, [field]: value }));
-  };
-
-  const submitAuth = async (event) => {
-    event.preventDefault();
-    setLoading(true);
-    setAuthError("");
-
-    try {
-      const payload =
-        mode === "login"
-          ? await authApi.login({ email: form.email, password: form.password })
-          : await authApi.register(form);
-      onAuth(payload);
-      navigate(location.state?.from || "/communication", { replace: true });
-    } catch (error) {
-      setAuthError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <PageFrame eyebrow="Account" title="Sign in to Communication Coach">
-      <GlassCard className="mx-auto max-w-xl p-5 sm:p-6">
-        <IconBadge icon={ShieldCheck} className="mb-4 text-emerald-200" />
-        <h3 className="text-2xl font-bold">
-          {mode === "login" ? "Welcome back" : "Create your account"}
-        </h3>
-        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          Your communication sessions, scores, streaks, and reports are saved to
-          your account.
-        </p>
-        <form className="mt-6 space-y-4" onSubmit={submitAuth}>
-          {mode === "register" ? (
-            <input
-              value={form.name}
-              onChange={(event) => updateField("name", event.target.value)}
-              className="min-h-12 w-full rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
-              placeholder="Name"
-            />
-          ) : null}
-          <input
-            value={form.email}
-            onChange={(event) => updateField("email", event.target.value)}
-            className="min-h-12 w-full rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
-            placeholder="Email"
-            type="email"
-          />
-          <input
-            value={form.password}
-            onChange={(event) => updateField("password", event.target.value)}
-            className="min-h-12 w-full rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
-            placeholder="Password"
-            type="password"
-          />
-          {authError ? (
-            <p className="text-sm text-rose-500 dark:text-rose-200">{authError}</p>
-          ) : null}
-          <button
-            className="inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-70"
-            style={{ background: primaryGradient }}
-            disabled={loading}
-          >
-            <User className="mr-2 h-5 w-5" />
-            {loading
-              ? "Please wait..."
-              : mode === "login"
-                ? "Sign In"
-                : "Create Account"}
-          </button>
-        </form>
-        <button
-          className="mt-4 text-sm font-semibold text-violet-600 dark:text-violet-200"
-          onClick={() => {
-            setAuthError("");
-            setMode((value) => (value === "login" ? "register" : "login"));
-          }}
-        >
-          {mode === "login"
-            ? "Create a new account"
-            : "Already have an account? Sign in"}
-        </button>
-      </GlassCard>
-    </PageFrame>
-  );
-}
-
-function AppRoutes({ theme, setTheme, onAuth }) {
+function AppRoutes({ theme, setTheme }) {
   const location = useLocation();
 
   return (
@@ -2144,7 +2047,6 @@ function AppRoutes({ theme, setTheme, onAuth }) {
         <Route path="/ai-mentor" element={<AiMentorPage />} />
         <Route path="/daily-planner" element={<DailyPlannerPage />} />
         <Route path="/profile" element={<ProfilePage theme={theme} />} />
-        <Route path="/login" element={<AuthPage onAuth={onAuth} />} />
         <Route
           path="/settings"
           element={<SettingsPage theme={theme} setTheme={setTheme} />}
@@ -2160,12 +2062,8 @@ export default function App() {
   const [theme, setTheme] = useState("dark");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
-  const handleAuth = (session) => {
-    setAuthSession(session);
-  };
-
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <ScrollToTop />
       <AppShell
         theme={theme}
@@ -2173,11 +2071,7 @@ export default function App() {
         notificationsOpen={notificationsOpen}
         setNotificationsOpen={setNotificationsOpen}
       >
-        <AppRoutes
-          theme={theme}
-          setTheme={setTheme}
-          onAuth={handleAuth}
-        />
+        <AppRoutes theme={theme} setTheme={setTheme} />
       </AppShell>
     </BrowserRouter>
   );

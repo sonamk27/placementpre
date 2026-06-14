@@ -58,6 +58,7 @@ export const authApi = {
 };
 
 export const communicationApi = {
+  health: () => apiRequest("/api/health"),
   startTopic: () => apiRequest("/api/communication/start-topic", { method: "POST" }),
   analyze: (payload) =>
     apiRequest("/api/communication/analyze", { method: "POST", body: payload }),

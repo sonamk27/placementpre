@@ -10,6 +10,7 @@ import {
   startTopic,
 } from "../controllers/communicationController.js";
 import { attachCommunicationUser } from "../middleware/authMiddleware.js";
+import { requireDatabase } from "../middleware/databaseMiddleware.js";
 import { validateRequest } from "../middleware/validateRequest.js";
 import {
   analyzeValidator,
@@ -29,9 +30,17 @@ const coachLimiter = rateLimit({
 router.use(attachCommunicationUser);
 
 router.post("/start-topic", coachLimiter, startTopic);
-router.post("/analyze", coachLimiter, analyzeValidator, validateRequest, analyzeMessage);
+router.post(
+  "/analyze",
+  coachLimiter,
+  requireDatabase,
+  analyzeValidator,
+  validateRequest,
+  analyzeMessage,
+);
 router.get("/history", historyValidator, validateRequest, getHistory);
 router.get("/stats", getStats);
+router.use(requireDatabase);
 router.get("/report/weekly", getWeeklyReportController);
 router.get("/summary/monthly", getMonthlySummaryController);
 router.get("/export", exportValidator, validateRequest, exportHistory);

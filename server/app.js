@@ -3,6 +3,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import morgan from "morgan";
+import { isDatabaseConnected } from "./config/database.js";
 import { config } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -40,7 +41,11 @@ app.use(
 );
 
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", service: "prepmate-ai-api" });
+  res.json({
+    status: "ok",
+    service: "prepmate-ai-api",
+    database: isDatabaseConnected() ? "connected" : "disconnected",
+  });
 });
 
 app.use("/api/auth", authRoutes);

@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { isDatabaseConnected } from "../config/database.js";
 import { config } from "../config/env.js";
 import { User } from "../models/User.js";
 import { HttpError } from "../utils/httpError.js";
@@ -23,26 +24,17 @@ export const authenticateJwt = asyncHandler(async (req, res, next) => {
   next();
 });
 
-const getGuestCommunicationUser = async () =>
-  User.findOneAndUpdate(
-    { email: "guest@prepmate.local" },
-    {
-      $setOnInsert: {
-        name: "Guest User",
-        email: "guest@prepmate.local",
-        passwordHash: "communication-coach-guest",
-      },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
-  )
-    .select("_id name email")
-    .lean();
+const guestCommunicationUser = {
+  _id: config.guestUserId,
+  name: "Guest User",
+  email: "guest@prepmate.local",
+};
 
 export const attachCommunicationUser = asyncHandler(async (req, res, next) => {
   const header = req.get("Authorization") || "";
   const [scheme, token] = header.split(" ");
 
-  if (scheme === "Bearer" && token) {
+  if (scheme === "Bearer" && token && isDatabaseConnected()) {
     try {
       const payload = jwt.verify(token, config.jwtSecret);
       const user = await User.findById(payload.sub).select("_id name email").lean();
@@ -56,6 +48,6 @@ export const attachCommunicationUser = asyncHandler(async (req, res, next) => {
     }
   }
 
-  req.user = await getGuestCommunicationUser();
+  req.user = guestCommunicationUser;
   return next();
 });

@@ -1,4 +1,5 @@
 import { Types } from "mongoose";
+import { isDatabaseConnected } from "../config/database.js";
 import { CommunicationSession } from "../models/CommunicationSession.js";
 import {
   getCommunicationStats,
@@ -26,6 +27,42 @@ const mapSession = (session) => ({
   motivationQuote: session.motivationQuote,
   createdAt: session.createdAt,
 });
+
+const emptyWeeklyProgress = () =>
+  Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() - (6 - index));
+
+    return {
+      date: date.toISOString().slice(0, 10),
+      totalConversations: 0,
+      averageGrammarScore: 0,
+      averageVocabularyScore: 0,
+      averageFluencyScore: 0,
+      averageConfidenceScore: 0,
+    };
+  });
+
+const emptyStats = () => {
+  const weeklyProgress = emptyWeeklyProgress();
+
+  return {
+    totalConversations: 0,
+    averageGrammarScore: 0,
+    averageVocabularyScore: 0,
+    averageFluencyScore: 0,
+    averageConfidenceScore: 0,
+    weeklyProgress,
+    weeklyImprovementPercentage: 0,
+    conversationStreak: 0,
+    charts: {
+      grammar: weeklyProgress.map((row) => ({ date: row.date, score: 0 })),
+      vocabulary: weeklyProgress.map((row) => ({ date: row.date, score: 0 })),
+      fluency: weeklyProgress.map((row) => ({ date: row.date, score: 0 })),
+      confidence: weeklyProgress.map((row) => ({ date: row.date, score: 0 })),
+    },
+  };
+};
 
 export const startTopic = asyncHandler(async (req, res) => {
   res.json(getDailyCommunicationStarter(req.user._id));
@@ -72,6 +109,18 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
 });
 
 export const getHistory = asyncHandler(async (req, res) => {
+  if (!isDatabaseConnected()) {
+    return res.json({
+      conversations: [],
+      pagination: {
+        page: req.query.page || 1,
+        limit: req.query.limit || 20,
+        total: 0,
+        pages: 0,
+      },
+    });
+  }
+
   const page = req.query.page || 1;
   const limit = req.query.limit || 20;
   const skip = (page - 1) * limit;
@@ -98,6 +147,10 @@ export const getHistory = asyncHandler(async (req, res) => {
 });
 
 export const getStats = asyncHandler(async (req, res) => {
+  if (!isDatabaseConnected()) {
+    return res.json(emptyStats());
+  }
+
   const userId = new Types.ObjectId(req.user._id);
   res.json(await getCommunicationStats(userId));
 });
