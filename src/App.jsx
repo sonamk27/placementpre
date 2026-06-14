@@ -8,6 +8,7 @@ import {
   Route,
   Routes,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import {
   ArcElement,
@@ -73,6 +74,11 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import {
+  authApi,
+  communicationApi,
+  setAuthSession,
+} from "./api";
 
 ChartJS.register(
   CategoryScale,
@@ -689,6 +695,137 @@ function ProgressDashboard() {
 }
 
 function CommunicationCoach() {
+  const defaultStarter = {
+    topic: "Describe a project where you solved a real user problem.",
+    vocabularyWord: {
+      word: "impact",
+      meaning: "a measurable effect or result",
+      example: "My project created impact by reducing manual tracking time.",
+    },
+    motivationQuote: "Every polished answer starts as one honest attempt.",
+  };
+  const [starter, setStarter] = useState(defaultStarter);
+  const [message, setMessage] = useState("Today I practice React and DSA.");
+  const [analysis, setAnalysis] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [coachError, setCoachError] = useState("");
+
+  const refreshCoachData = async () => {
+    const [statsPayload, historyPayload] = await Promise.all([
+      communicationApi.stats(),
+      communicationApi.history(),
+    ]);
+    setStats(statsPayload);
+    setHistory(historyPayload.conversations || []);
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const loadCoach = async () => {
+      try {
+        const [topicPayload, statsPayload, historyPayload] = await Promise.all([
+          communicationApi.startTopic(),
+          communicationApi.stats(),
+          communicationApi.history(),
+        ]);
+
+        if (!active) return;
+        setStarter(topicPayload);
+        setStats(statsPayload);
+        setHistory(historyPayload.conversations || []);
+      } catch (error) {
+        if (!active) return;
+        setCoachError(error.message);
+      }
+    };
+
+    loadCoach();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const analyzeAnswer = async () => {
+    if (!message.trim()) return;
+
+    setLoading(true);
+    setCoachError("");
+
+    try {
+      const result = await communicationApi.analyze({
+        message,
+        topic: starter.topic,
+      });
+      setAnalysis(result);
+      await refreshCoachData();
+    } catch (error) {
+      setCoachError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confidenceScore =
+    analysis?.confidenceScore || stats?.averageConfidenceScore || 88;
+  const vocabularyDetail = starter.vocabularyWord
+    ? `${starter.vocabularyWord.word}: ${starter.vocabularyWord.meaning}`
+    : "impact, iteration, adoption, measurable";
+  const latestConversation = history[0];
+  const featureItems = [
+    ["Daily Speaking Topic", starter.topic],
+    ["Vocabulary Builder", vocabularyDetail],
+    [
+      "Grammar Correction",
+      analysis
+        ? `${analysis.grammarScore}/10. ${analysis.feedback}`
+        : "Past tense, articles, punctuation, and sentence flow.",
+    ],
+    [
+      "Mock HR Interview",
+      analysis?.followUpQuestion ||
+        latestConversation?.followUpQuestion ||
+        "Tell me about yourself. Why should we hire you?",
+    ],
+    [
+      "Confidence Score",
+      stats?.totalConversations
+        ? `Grammar ${stats.averageGrammarScore}, vocabulary ${stats.averageVocabularyScore}, fluency ${stats.averageFluencyScore}, confidence ${stats.averageConfidenceScore}.`
+        : "Grammar 8, vocabulary 7, fluency 8, confidence 8.",
+    ],
+  ];
+  const resultCards = [
+    [
+      "Corrected Version",
+      analysis?.correctedMessage ||
+        latestConversation?.correctedMessage ||
+        "Today, I practiced React and DSA.",
+    ],
+    [
+      "Grammar Score",
+      analysis
+        ? `${analysis.grammarScore}/10. ${analysis.feedback}`
+        : latestConversation
+          ? `${latestConversation.grammarScore}/10. ${latestConversation.feedback}`
+          : "8/10. Use past tense consistently.",
+    ],
+    [
+      "AI Suggestion",
+      analysis?.recommendations?.join(" ") ||
+        latestConversation?.recommendations?.join(" ") ||
+        "Use stronger words like implemented, improved, optimized.",
+    ],
+    [
+      "Mock HR Follow-up",
+      analysis?.followUpQuestion ||
+        latestConversation?.followUpQuestion ||
+        "What problem did your project solve for users?",
+    ],
+  ];
+
   return (
     <GlassCard id="communication" className="p-5 sm:p-6">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -704,11 +841,11 @@ function CommunicationCoach() {
           <p className="text-sm text-emerald-800 dark:text-emerald-100">
             Confidence Score
           </p>
-          <p className="mt-1 text-4xl font-black">88</p>
+          <p className="mt-1 text-4xl font-black">{confidenceScore}</p>
         </div>
       </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {communicationFeatures.map(([title, detail]) => (
+        {featureItems.map(([title, detail]) => (
           <div
             key={title}
             className="rounded-lg border border-white/10 bg-white/[0.08] p-4"
@@ -727,27 +864,34 @@ function CommunicationCoach() {
             Daily Speaking Topic
           </p>
           <p className="mt-3 text-lg font-semibold">
-            Describe a project where you solved a real user problem.
+            {starter.topic}
           </p>
+          {starter.vocabularyWord ? (
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              Word of the day: {starter.vocabularyWord.word} -{" "}
+              {starter.vocabularyWord.example}
+            </p>
+          ) : null}
           <textarea
             className="mt-5 min-h-[150px] w-full resize-none rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm outline-none focus:border-violet-300"
-            defaultValue="Today I practice React and DSA."
+            value={message}
+            onChange={(event) => setMessage(event.target.value)}
           />
+          {coachError ? (
+            <p className="mt-3 text-sm text-rose-200">{coachError}</p>
+          ) : null}
           <button
-            className="mt-4 inline-flex items-center rounded-lg px-5 py-3 text-sm font-bold text-white"
+            className="mt-4 inline-flex items-center rounded-lg px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-70"
             style={{ background: primaryGradient }}
+            onClick={analyzeAnswer}
+            disabled={loading}
           >
             <Sparkles className="mr-2 h-5 w-5" />
-            Analyze Answer
+            {loading ? "Analyzing..." : "Analyze Answer"}
           </button>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          {[
-            ["Corrected Version", "Today, I practiced React and DSA."],
-            ["Grammar Score", "8/10. Use past tense consistently."],
-            ["AI Suggestion", "Use stronger words like implemented, improved, optimized."],
-            ["Mock HR Follow-up", "What problem did your project solve for users?"],
-          ].map(([title, text]) => (
+          {resultCards.map(([title, text]) => (
             <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
               <p className="text-sm font-bold">{title}</p>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -1884,7 +2028,108 @@ function SettingsPage({ theme, setTheme }) {
   );
 }
 
-function AppRoutes({ theme, setTheme }) {
+function AuthPage({ onAuth }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({
+    name: "Sonam",
+    email: "",
+    password: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
+
+  const updateField = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const submitAuth = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    setAuthError("");
+
+    try {
+      const payload =
+        mode === "login"
+          ? await authApi.login({ email: form.email, password: form.password })
+          : await authApi.register(form);
+      onAuth(payload);
+      navigate(location.state?.from || "/communication", { replace: true });
+    } catch (error) {
+      setAuthError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <PageFrame eyebrow="Account" title="Sign in to Communication Coach">
+      <GlassCard className="mx-auto max-w-xl p-5 sm:p-6">
+        <IconBadge icon={ShieldCheck} className="mb-4 text-emerald-200" />
+        <h3 className="text-2xl font-bold">
+          {mode === "login" ? "Welcome back" : "Create your account"}
+        </h3>
+        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          Your communication sessions, scores, streaks, and reports are saved to
+          your account.
+        </p>
+        <form className="mt-6 space-y-4" onSubmit={submitAuth}>
+          {mode === "register" ? (
+            <input
+              value={form.name}
+              onChange={(event) => updateField("name", event.target.value)}
+              className="min-h-12 w-full rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
+              placeholder="Name"
+            />
+          ) : null}
+          <input
+            value={form.email}
+            onChange={(event) => updateField("email", event.target.value)}
+            className="min-h-12 w-full rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
+            placeholder="Email"
+            type="email"
+          />
+          <input
+            value={form.password}
+            onChange={(event) => updateField("password", event.target.value)}
+            className="min-h-12 w-full rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
+            placeholder="Password"
+            type="password"
+          />
+          {authError ? (
+            <p className="text-sm text-rose-500 dark:text-rose-200">{authError}</p>
+          ) : null}
+          <button
+            className="inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-70"
+            style={{ background: primaryGradient }}
+            disabled={loading}
+          >
+            <User className="mr-2 h-5 w-5" />
+            {loading
+              ? "Please wait..."
+              : mode === "login"
+                ? "Sign In"
+                : "Create Account"}
+          </button>
+        </form>
+        <button
+          className="mt-4 text-sm font-semibold text-violet-600 dark:text-violet-200"
+          onClick={() => {
+            setAuthError("");
+            setMode((value) => (value === "login" ? "register" : "login"));
+          }}
+        >
+          {mode === "login"
+            ? "Create a new account"
+            : "Already have an account? Sign in"}
+        </button>
+      </GlassCard>
+    </PageFrame>
+  );
+}
+
+function AppRoutes({ theme, setTheme, onAuth }) {
   const location = useLocation();
 
   return (
@@ -1899,6 +2144,7 @@ function AppRoutes({ theme, setTheme }) {
         <Route path="/ai-mentor" element={<AiMentorPage />} />
         <Route path="/daily-planner" element={<DailyPlannerPage />} />
         <Route path="/profile" element={<ProfilePage theme={theme} />} />
+        <Route path="/login" element={<AuthPage onAuth={onAuth} />} />
         <Route
           path="/settings"
           element={<SettingsPage theme={theme} setTheme={setTheme} />}
@@ -1914,6 +2160,10 @@ export default function App() {
   const [theme, setTheme] = useState("dark");
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
+  const handleAuth = (session) => {
+    setAuthSession(session);
+  };
+
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -1923,7 +2173,11 @@ export default function App() {
         notificationsOpen={notificationsOpen}
         setNotificationsOpen={setNotificationsOpen}
       >
-        <AppRoutes theme={theme} setTheme={setTheme} />
+        <AppRoutes
+          theme={theme}
+          setTheme={setTheme}
+          onAuth={handleAuth}
+        />
       </AppShell>
     </BrowserRouter>
   );
