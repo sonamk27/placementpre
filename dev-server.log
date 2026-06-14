@@ -2,19 +2,9 @@
 > prepmate-ai@1.0.0 dev
 > node scripts/dev.mjs
 
-[web] [2m2:47:18 pm[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because vite config has changed
 [web] 
-  [32m[1mVITE[22m v8.0.16[39m  [2mready in [0m[1m485[22m[2m[0m ms[22m
+  [32m[1mVITE[22m v8.0.16[39m  [2mready in [0m[1m300[22m[2m[0m ms[22m
 
 [web]   [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
 [api] PrepMate API running on http://127.0.0.1:5000
-[api] [0mGET /api/health [32m200[0m 29.479 ms - 69[0m
-[api] [0mGET /api/communication/history?limit=5 [32m200[0m 14.386 ms - 76[0m
-[api] [0mPOST /api/communication/start-topic [32m200[0m 3.329 ms - 331[0m
-[api] [0mGET /api/communication/stats [32m200[0m 2.488 ms - 2190[0m
-[api] [0mPOST /api/communication/analyze [31m503[0m 2.705 ms - 1025[0m
-[api] [0mPOST /api/communication/analyze [31m503[0m 1.059 ms - 1025[0m
-[api] [0mGET /api/health [32m200[0m 0.563 ms - 69[0m
-[api] [0mPOST /api/communication/start-topic [32m200[0m 0.944 ms - 331[0m
-[api] [0mGET /api/communication/stats [32m200[0m 0.786 ms - 2190[0m
-[api] [0mGET /api/communication/history?limit=5 [32m200[0m 1.985 ms - 76[0m
+[api] [0mGET / [32m200[0m 2.157 ms - 110[0m

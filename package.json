@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "client": "vite",
-    "server": "node server/server.js",
-    "server:dev": "node --watch server/server.js",
+    "server": "node backend/server.js",
+    "server:dev": "node --watch backend/server.js",
+    "stop": "node scripts/stop-dev.mjs",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server/server.js"
+    "start": "node backend/server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

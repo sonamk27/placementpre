@@ -40,6 +40,15 @@ app.use(
   }),
 );
 
+app.get("/", (req, res) => {
+  res.json({
+    service: "PrepMate AI backend",
+    status: "running",
+    frontend: "http://127.0.0.1:5173",
+    health: "/api/health",
+  });
+});
+
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",

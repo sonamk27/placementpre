@@ -41,6 +41,19 @@ const communicationSessionSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    mistakes: {
+      type: [String],
+      default: [],
+    },
+    betterVocabularySuggestions: {
+      type: [String],
+      default: [],
+    },
+    improvementTip: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     aiRecommendations: {
       type: [String],
       default: [],

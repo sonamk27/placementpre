@@ -21,7 +21,8 @@ Copy `.env.example` to `.env`, then set `MONGODB_URI`, `JWT_SECRET`, and
 `npm run dev` starts both the Vite frontend and the Express API. Use
 `npm run client` and `npm run server` only when you want to run them separately.
 
-The Communication Coach API runs on `http://127.0.0.1:5000` by default and the
+The backend lives in `backend/`. The Communication Coach API runs on
+`http://127.0.0.1:5000` by default and the
 Vite dev server proxies `/api` requests to it.
 
 Key endpoints:

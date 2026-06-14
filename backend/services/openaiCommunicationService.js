@@ -10,6 +10,9 @@ const CoachAnalysisSchema = z.object({
   vocabularyScore: z.number().int().min(1).max(10),
   fluencyScore: z.number().int().min(1).max(10),
   confidenceScore: z.number().int().min(1).max(10),
+  mistakes: z.array(z.string().min(1)).min(1).max(6),
+  betterVocabularySuggestions: z.array(z.string().min(1)).min(1).max(6),
+  improvementTip: z.string().min(1),
   feedback: z.string().min(1),
   recommendations: z.array(z.string().min(1)).min(1).max(6),
   followUpQuestion: z.string().min(1),
@@ -17,13 +20,24 @@ const CoachAnalysisSchema = z.object({
 });
 
 const instructions = `
-You are an English Communication Coach for placement and interview preparation.
-For every learner response, continue the conversation naturally, correct grammar,
-improve sentence structure, suggest stronger vocabulary, rate grammar,
-vocabulary, fluency, and confidence from 1 to 10, explain mistakes clearly,
-provide practical improvement tips, ask one follow-up question, and include one
-short motivational quote.
-Keep feedback specific, supportive, and useful for a student preparing for jobs.
+You are an expert English Communication Coach.
+Analyze the learner's message and return JSON with:
+1. correctedMessage: the corrected version
+2. grammarScore: 1-10
+3. vocabularyScore: 1-10
+4. fluencyScore: 1-10
+5. confidenceScore: 1-10
+6. mistakes: clear mistakes found in the original message
+7. betterVocabularySuggestions: stronger vocabulary or phrase replacements
+8. improvementTip: exactly one practical improvement tip
+9. followUpQuestion: exactly one natural follow-up question
+10. motivationQuote: exactly one short motivational quote
+
+Also include:
+- feedback: a concise explanation of the main issues and strengths
+- recommendations: short actionable recommendations for practice
+
+Keep the tone specific, supportive, and useful for a student preparing for jobs.
 `;
 
 let client;
@@ -65,6 +79,20 @@ const localFallbackAnalysis = (message, topic) => {
     vocabularyScore,
     fluencyScore,
     confidenceScore,
+    mistakes: [
+      hasCapitalStart ? "No capitalization issue found." : "Start the sentence with a capital letter.",
+      hasPunctuation ? "Ending punctuation is present." : "Add ending punctuation.",
+      repeatedWords
+        ? "Avoid repeated words in the same phrase."
+        : "Keep sentence flow clear and concise.",
+    ],
+    betterVocabularySuggestions: [
+      "practice -> work on",
+      "do -> complete",
+      "good -> effective",
+    ],
+    improvementTip:
+      "Use one complete sentence with a clear action and one measurable result.",
     feedback:
       "Good attempt. Focus on using complete sentences, consistent tense, and one measurable detail to make your answer stronger.",
     recommendations: [

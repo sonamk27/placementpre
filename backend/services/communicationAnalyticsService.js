@@ -282,6 +282,9 @@ export const toHistoryCsv = (sessions) => {
     "fluencyScore",
     "confidenceScore",
     "aiFeedback",
+    "mistakes",
+    "betterVocabularySuggestions",
+    "improvementTip",
     "aiRecommendations",
     "motivationQuote",
   ];
@@ -302,6 +305,9 @@ export const toHistoryCsv = (sessions) => {
       session.fluencyScore,
       session.confidenceScore,
       session.aiFeedback,
+      session.mistakes?.join("; "),
+      session.betterVocabularySuggestions?.join("; "),
+      session.improvementTip,
       session.aiRecommendations?.join("; "),
       session.motivationQuote,
     ]

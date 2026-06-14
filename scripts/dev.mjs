@@ -22,7 +22,7 @@ const start = (name, args) => {
 };
 
 const processes = [
-  start("api", ["server/server.js"]),
+  start("api", ["backend/server.js"]),
   start("web", [viteBin]),
 ];
 

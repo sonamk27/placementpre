@@ -811,15 +811,25 @@ function CommunicationCoach() {
     [
       "Grammar Score",
       analysis
-        ? `${analysis.grammarScore}/10. ${analysis.feedback}`
+        ? `${analysis.grammarScore}/10. ${
+            analysis.mistakes?.join(" ") || analysis.feedback
+          }`
         : latestConversation
-          ? `${latestConversation.grammarScore}/10. ${latestConversation.feedback}`
+          ? `${latestConversation.grammarScore}/10. ${
+              latestConversation.mistakes?.join(" ") || latestConversation.feedback
+            }`
           : "8/10. Use past tense consistently.",
     ],
     [
       "AI Suggestion",
-      analysis?.recommendations?.join(" ") ||
-        latestConversation?.recommendations?.join(" ") ||
+      [
+        ...(analysis?.betterVocabularySuggestions ||
+          latestConversation?.betterVocabularySuggestions ||
+          []),
+        analysis?.improvementTip || latestConversation?.improvementTip || "",
+      ]
+        .filter(Boolean)
+        .join(" ") ||
         "Use stronger words like implemented, improved, optimized.",
     ],
     [
