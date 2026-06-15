@@ -54,7 +54,6 @@ import {
   Pencil,
   Play,
   Plus,
-  RefreshCw,
   Rocket,
   Search,
   Send,
@@ -1337,13 +1336,10 @@ function CommunicationCoach() {
     <GlassCard id="communication" className="overflow-hidden p-0">
       <div className="border-b border-white/10 bg-slate-950/90 p-4 text-white sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <IconBadge icon={Mic2} className="text-emerald-200" />
-            <div className="min-w-0">
-              <h3 className="text-xl font-black sm:text-2xl">
-                Communication Chat
-              </h3>
-            </div>
+          <div className="min-w-0">
+            <h3 className="text-xl font-black sm:text-2xl">
+              Communication Chat
+            </h3>
           </div>
           <button
             type="button"
@@ -1404,66 +1400,6 @@ function CommunicationCoach() {
         </div>
 
         <div className="border-t border-white/10 bg-white/[0.06] p-4 sm:p-5">
-          <div className="mb-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-            <label className="min-w-0">
-              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">
-                Microphone
-              </span>
-              <select
-                className="h-12 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-violet-300 dark:bg-slate-950 dark:text-white"
-                value={selectedMicId}
-                onChange={(event) => setSelectedMicId(event.target.value)}
-                disabled={recording || transcribing}
-              >
-                {microphones.length ? (
-                  microphones.map((device, index) => (
-                    <option
-                      key={`${device.deviceId || "mic"}-${index}`}
-                      value={device.deviceId}
-                    >
-                      {device.label || `Microphone ${index + 1}`}
-                    </option>
-                  ))
-                ) : (
-                  <option value="">Default microphone</option>
-                )}
-              </select>
-            </label>
-
-            <div className="flex flex-col gap-2 sm:flex-row lg:self-end">
-              <button
-                type="button"
-                onClick={() => refreshMicrophones({ requestPermission: true })}
-                disabled={recording || transcribing}
-                className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-white/10 bg-white/10 text-slate-700 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-100 sm:w-12"
-                aria-label="Refresh microphones"
-                title="Refresh microphones"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={recording ? stopVoiceAnswer : startVoiceAnswer}
-                disabled={transcribing}
-                className={`inline-flex h-12 min-w-[168px] items-center justify-center rounded-lg px-4 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${
-                  recording ? "bg-rose-500 hover:bg-rose-400" : "hover:scale-[1.01]"
-                }`}
-                style={recording ? undefined : { background: primaryGradient }}
-              >
-                {recording ? (
-                  <Square className="mr-2 h-4 w-4 fill-white/20" />
-                ) : (
-                  <Mic className="mr-2 h-4 w-4" />
-                )}
-                {recording
-                  ? `Stop (${recordingSeconds}s)`
-                  : transcribing
-                    ? "Transcribing..."
-                    : "Speak Answer"}
-              </button>
-            </div>
-          </div>
-
           <div className="flex items-end gap-2 rounded-lg border border-white/10 bg-white/[0.08] p-2">
             <textarea
               className="max-h-40 min-h-16 flex-1 resize-none bg-transparent px-3 py-3 text-sm leading-6 outline-none dark:text-white"
@@ -1476,6 +1412,23 @@ function CommunicationCoach() {
               }}
               placeholder="Type your answer or use the mic"
             />
+            <button
+              type="button"
+              onClick={recording ? stopVoiceAnswer : startVoiceAnswer}
+              disabled={transcribing}
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                recording ? "bg-rose-500 hover:bg-rose-400" : ""
+              }`}
+              style={recording ? undefined : { background: primaryGradient }}
+              aria-label={recording ? "Stop speaking" : "Speak answer"}
+              title={recording ? "Stop speaking" : "Speak answer"}
+            >
+              {recording ? (
+                <Square className="h-5 w-5 fill-white/20" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+            </button>
             <button
               type="button"
               className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-white disabled:cursor-not-allowed disabled:opacity-60"

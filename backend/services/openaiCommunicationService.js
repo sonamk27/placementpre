@@ -76,15 +76,37 @@ const localFallbackAnalysis = (message, topic) => {
   const hasCapitalStart = /^[A-Z]/.test(trimmed);
   const hasPunctuation = /[.!?]$/.test(trimmed);
   const repeatedWords = /\b(\w+)\s+\1\b/i.test(trimmed);
+  const hasActionVerb =
+    /\b(built|created|developed|implemented|debugged|improved|optimized|designed|led|collaborated|learned|tested|deployed)\b/i.test(
+      trimmed,
+    );
+  const hasOutcome =
+    /\b(result|impact|reduced|increased|improved|saved|helped|users?|faster|time|percent|%|\d+)\b/i.test(
+      trimmed,
+    );
+  const hasStructure = sentenceCount >= 2 || /\b(first|then|after|because|finally)\b/i.test(trimmed);
 
-  const grammarScore = clampScore(6 + Number(hasCapitalStart) + Number(hasPunctuation) - Number(repeatedWords));
-  const vocabularyScore = clampScore(wordCount > 35 ? 8 : wordCount > 18 ? 7 : 6);
-  const fluencyScore = clampScore(sentenceCount > 1 ? 8 : 6);
-  const confidenceScore = clampScore(trimmed.length > 80 ? 8 : 6);
+  const grammarScore = clampScore(
+    6 + Number(hasCapitalStart) + Number(hasPunctuation) - Number(repeatedWords),
+  );
+  const vocabularyScore = clampScore(
+    5 + Number(hasActionVerb) + Number(hasOutcome) + Number(wordCount > 45),
+  );
+  const fluencyScore = clampScore(5 + Number(hasStructure) + Number(sentenceCount > 2));
+  const confidenceScore = clampScore(
+    5 + Number(wordCount > 35) + Number(hasActionVerb) + Number(hasOutcome),
+  );
 
   const correctedMessage = `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}${
     hasPunctuation ? "" : "."
   }`;
+  const missingPoints = [
+    wordCount < 25 ? "Expand the answer with one concrete example." : "",
+    hasActionVerb ? "" : "Use a clear action verb such as built, implemented, debugged, or improved.",
+    hasOutcome ? "" : "Add an outcome, metric, or user benefit.",
+    hasStructure ? "" : "Organize the answer as situation, action, and result.",
+    repeatedWords ? "Avoid repeated words in the same phrase." : "",
+  ].filter(Boolean);
 
   return {
     correctedMessage,
@@ -92,28 +114,27 @@ const localFallbackAnalysis = (message, topic) => {
     vocabularyScore,
     fluencyScore,
     confidenceScore,
-    mistakes: [
-      hasCapitalStart ? "No capitalization issue found." : "Start the sentence with a capital letter.",
-      hasPunctuation ? "Ending punctuation is present." : "Add ending punctuation.",
-      repeatedWords
-        ? "Avoid repeated words in the same phrase."
-        : "Keep sentence flow clear and concise.",
-    ],
+    mistakes:
+      missingPoints.length > 0
+        ? missingPoints.slice(0, 4)
+        : ["The answer is clear; make it stronger with one more specific result."],
     betterVocabularySuggestions: [
-      "practice -> work on",
-      "do -> complete",
-      "good -> effective",
+      "made -> built or implemented",
+      "good -> effective or reliable",
+      "worked on -> contributed to or owned",
     ],
     improvementTip:
-      "Use one complete sentence with a clear action and one measurable result.",
+      "Answer in three parts: context, your action, and the measurable or visible result.",
     feedback:
-      "Good attempt. Focus on using complete sentences, consistent tense, and one measurable detail to make your answer stronger.",
+      hasActionVerb && hasOutcome
+        ? "Good attempt. Your answer has a clear action and result; make it interview-ready by adding brief context before the action."
+        : "Your answer is understandable, but it needs stronger interview structure. Add what happened, what you personally did, and what changed because of it.",
     recommendations: [
-      "Start with a direct answer before adding details.",
-      "Use action verbs such as implemented, improved, optimized, or collaborated.",
-      "End with the result or learning from your experience.",
+      "Start with one sentence that directly answers the question.",
+      "Use one specific project or situation instead of speaking generally.",
+      "End with the result, learning, or user impact.",
     ],
-    followUpQuestion: `Can you add one measurable result related to "${topic}"?`,
+    followUpQuestion: `What was the most visible result or learning from your answer to "${topic}"?`,
     motivationQuote: "Every polished answer starts as one honest attempt.",
   };
 };

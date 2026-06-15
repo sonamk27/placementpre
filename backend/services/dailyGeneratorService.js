@@ -1,14 +1,16 @@
 const topics = [
-  "Describe a project where you solved a real user problem.",
-  "Explain how you handled a difficult bug during development.",
-  "Tell an interviewer about a time you learned a new technology quickly.",
-  "Describe your strengths as a teammate in a software project.",
-  "Explain one technical concept to a non-technical audience.",
-  "Tell me about yourself for a fresher software developer role.",
-  "Describe a time you improved a process or saved time.",
-  "Explain why a company should hire you for a MERN developer role.",
-  "Describe a mistake you made and what you changed afterward.",
-  "Share how you prepare before starting a coding task.",
+  "Tell me about yourself for a fresher software developer role. Include your skills, one project, and the kind of role you are targeting.",
+  "Describe one project you built that solved a real user problem. Explain the problem, your exact contribution, and the result.",
+  "Tell me about a difficult bug you fixed. What was the symptom, how did you debug it, and what did you learn?",
+  "Explain a technical concept from your project to a non-technical interviewer. Keep it simple and connect it to user value.",
+  "Why should a company hire you for a MERN developer role? Support your answer with skills, project proof, and learning attitude.",
+  "Describe a time you learned a new technology quickly. What did you build or improve using it?",
+  "Tell me about a mistake you made in a project. What changed in your process after that?",
+  "Describe how you work in a team when tasks are divided. Include communication, ownership, and delivery.",
+  "Explain how you plan before starting a coding task. Mention requirement clarity, approach, testing, and review.",
+  "Describe a time you improved performance, usability, or workflow in a project. What changed and how did you measure it?",
+  "Tell me about a time you received feedback on your work. How did you respond and what improved?",
+  "Explain your strongest project as if this is the final HR round. Cover purpose, tech stack, challenges, and impact.",
 ];
 
 const vocabulary = [
