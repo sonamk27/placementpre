@@ -31,7 +31,6 @@ import {
   Briefcase,
   Building2,
   CalendarCheck,
-  CheckCircle2,
   ChevronRight,
   ClipboardCheck,
   Code2,
@@ -70,6 +69,7 @@ import {
   UploadCloud,
   User,
   Users,
+  Volume2,
   X,
   Zap,
 } from "lucide-react";
@@ -125,14 +125,6 @@ const progressRoutes = {
   "Interview Practice": "/interview",
   "Daily Streak": "/daily-planner",
 };
-
-const communicationFeatures = [
-  ["Daily Speaking Topic", "Describe a project where you solved a real user problem."],
-  ["Vocabulary Builder", "impact, iteration, adoption, measurable"],
-  ["Grammar Correction", "Past tense, articles, punctuation, and sentence flow."],
-  ["Mock HR Interview", "Tell me about yourself. Why should we hire you?"],
-  ["Confidence Score", "Grammar 8, vocabulary 7, fluency 8, confidence 8."],
-];
 
 const dsaTopics = [
   "Arrays",
@@ -702,35 +694,19 @@ function CommunicationCoach() {
   const [starter, setStarter] = useState(defaultStarter);
   const [message, setMessage] = useState("Today I practice React and DSA.");
   const [analysis, setAnalysis] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [coachError, setCoachError] = useState("");
-
-  const refreshCoachData = async () => {
-    const [statsPayload, historyPayload] = await Promise.all([
-      communicationApi.stats(),
-      communicationApi.history(),
-    ]);
-    setStats(statsPayload);
-    setHistory(historyPayload.conversations || []);
-  };
+  const [speakingKey, setSpeakingKey] = useState("");
 
   useEffect(() => {
     let active = true;
 
     const loadCoach = async () => {
       try {
-        const [topicPayload, statsPayload, historyPayload] = await Promise.all([
-          communicationApi.startTopic(),
-          communicationApi.stats(),
-          communicationApi.history(),
-        ]);
+        const topicPayload = await communicationApi.startTopic();
 
         if (!active) return;
         setStarter(topicPayload);
-        setStats(statsPayload);
-        setHistory(historyPayload.conversations || []);
       } catch (error) {
         if (!active) return;
         setCoachError(error.message);
@@ -741,6 +717,14 @@ function CommunicationCoach() {
 
     return () => {
       active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
 
@@ -765,7 +749,6 @@ function CommunicationCoach() {
         topic: starter.topic,
       });
       setAnalysis(result);
-      await refreshCoachData();
     } catch (error) {
       setCoachError(error.message);
     } finally {
@@ -773,146 +756,157 @@ function CommunicationCoach() {
     }
   };
 
-  const confidenceScore =
-    analysis?.confidenceScore || stats?.averageConfidenceScore || 88;
-  const vocabularyDetail = starter.vocabularyWord
-    ? `${starter.vocabularyWord.word}: ${starter.vocabularyWord.meaning}`
-    : "impact, iteration, adoption, measurable";
-  const latestConversation = history[0];
-  const featureItems = [
-    ["Daily Speaking Topic", starter.topic],
-    ["Vocabulary Builder", vocabularyDetail],
-    [
-      "Grammar Correction",
-      analysis
-        ? `${analysis.grammarScore}/10. ${analysis.feedback}`
-        : "Past tense, articles, punctuation, and sentence flow.",
-    ],
-    [
-      "Mock HR Interview",
-      analysis?.followUpQuestion ||
-        latestConversation?.followUpQuestion ||
-        "Tell me about yourself. Why should we hire you?",
-    ],
-    [
-      "Confidence Score",
-      stats?.totalConversations
-        ? `Grammar ${stats.averageGrammarScore}, vocabulary ${stats.averageVocabularyScore}, fluency ${stats.averageFluencyScore}, confidence ${stats.averageConfidenceScore}.`
-        : "Grammar 8, vocabulary 7, fluency 8, confidence 8.",
-    ],
-  ];
-  const resultCards = [
-    [
-      "Corrected Version",
-      analysis?.correctedMessage ||
-        latestConversation?.correctedMessage ||
-        "Today, I practiced React and DSA.",
-    ],
-    [
-      "Grammar Score",
-      analysis
-        ? `${analysis.grammarScore}/10. ${
-            analysis.mistakes?.join(" ") || analysis.feedback
-          }`
-        : latestConversation
-          ? `${latestConversation.grammarScore}/10. ${
-              latestConversation.mistakes?.join(" ") || latestConversation.feedback
-            }`
-          : "8/10. Use past tense consistently.",
-    ],
-    [
-      "AI Suggestion",
-      [
-        ...(analysis?.betterVocabularySuggestions ||
-          latestConversation?.betterVocabularySuggestions ||
-          []),
-        analysis?.improvementTip || latestConversation?.improvementTip || "",
+  const speakText = (key, text) => {
+    const speechText = String(text || "").trim();
+
+    if (
+      !speechText ||
+      typeof window === "undefined" ||
+      !window.speechSynthesis ||
+      !window.SpeechSynthesisUtterance
+    ) {
+      return;
+    }
+
+    if (speakingKey === key) {
+      window.speechSynthesis.cancel();
+      setSpeakingKey("");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new window.SpeechSynthesisUtterance(speechText);
+    utterance.lang = "en-US";
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.onend = () => setSpeakingKey("");
+    utterance.onerror = () => setSpeakingKey("");
+
+    setSpeakingKey(key);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const questionText = starter.vocabularyWord
+    ? `${starter.topic} Word of the day: ${starter.vocabularyWord.word}. ${starter.vocabularyWord.example}`
+    : starter.topic;
+  const vocabularySuggestions =
+    analysis?.betterVocabularySuggestions?.filter(Boolean).join(", ") || "";
+  const mistakes = analysis?.mistakes?.filter(Boolean).join(" ") || "";
+  const coachResponse = analysis
+    ? [
+        `Corrected answer: ${analysis.correctedMessage}`,
+        `Feedback: ${analysis.feedback}`,
+        mistakes ? `Grammar notes: ${mistakes}` : "",
+        vocabularySuggestions ? `Better vocabulary: ${vocabularySuggestions}` : "",
+        analysis.improvementTip ? `Tip: ${analysis.improvementTip}` : "",
+        analysis.followUpQuestion
+          ? `Follow-up question: ${analysis.followUpQuestion}`
+          : "",
+        `Scores: Grammar ${analysis.grammarScore}/10, Vocabulary ${analysis.vocabularyScore}/10, Fluency ${analysis.fluencyScore}/10, Confidence ${analysis.confidenceScore}/10.`,
       ]
         .filter(Boolean)
-        .join(" ") ||
-        "Use stronger words like implemented, improved, optimized.",
-    ],
-    [
-      "Mock HR Follow-up",
-      analysis?.followUpQuestion ||
-        latestConversation?.followUpQuestion ||
-        "What problem did your project solve for users?",
-    ],
-  ];
+        .join("\n\n")
+    : "Ready for your answer.";
+
+  const renderSpeakerButton = (key, text, disabled = false) => (
+    <button
+      type="button"
+      onClick={() => speakText(key, text)}
+      disabled={disabled}
+      className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition ${
+        speakingKey === key
+          ? "border-emerald-300/60 bg-emerald-400/20 text-emerald-100"
+          : "border-white/10 bg-white/10 text-slate-200 hover:bg-white/15"
+      } disabled:cursor-not-allowed disabled:opacity-45`}
+      aria-label={speakingKey === key ? "Stop reading" : "Read aloud"}
+      title={speakingKey === key ? "Stop reading" : "Read aloud"}
+    >
+      <Volume2 className="h-4 w-4" />
+    </button>
+  );
 
   return (
-    <GlassCard id="communication" className="p-5 sm:p-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <IconBadge icon={Mic2} className="mb-4 text-emerald-200" />
-          <h3 className="text-2xl font-bold">AI Communication Coach</h3>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Correct grammar, improve answers, suggest better vocabulary, simulate
-            HR interviews, and build confidence for placement conversations.
-          </p>
-        </div>
-        <div className="rounded-lg border border-emerald-300/20 bg-emerald-400/[0.12] p-5 text-center">
-          <p className="text-sm text-emerald-800 dark:text-emerald-100">
-            Confidence Score
-          </p>
-          <p className="mt-1 text-4xl font-black">{confidenceScore}</p>
+    <GlassCard id="communication" className="overflow-hidden p-0">
+      <div className="border-b border-white/10 bg-slate-950/90 p-4 text-white sm:p-5">
+        <div className="flex items-center gap-3">
+          <IconBadge icon={Mic2} className="text-emerald-200" />
+          <div className="min-w-0">
+            <h3 className="text-xl font-black sm:text-2xl">Communication Q&A</h3>
+          </div>
         </div>
       </div>
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {featureItems.map(([title, detail]) => (
-          <div
-            key={title}
-            className="rounded-lg border border-white/10 bg-white/[0.08] p-4"
-          >
-            <CheckCircle2 className="mb-3 h-5 w-5 text-emerald-300" />
-            <p className="text-sm font-semibold">{title}</p>
-            <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-              {detail}
+
+      <div className="space-y-5 p-4 sm:p-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
+            <Bot className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1 rounded-lg border border-white/10 bg-slate-950/90 p-4 text-white">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
+                Question
+              </p>
+              {renderSpeakerButton("question", questionText)}
+            </div>
+            <p className="text-lg font-semibold leading-7">{starter.topic}</p>
+            {starter.vocabularyWord ? (
+              <p className="mt-3 text-sm leading-6 text-slate-300">
+                Word of the day: {starter.vocabularyWord.word} -{" "}
+                {starter.vocabularyWord.example}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <div className="w-full rounded-lg border border-violet-300/20 bg-violet-500/[0.12] p-4 sm:max-w-[88%]">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-100">
+              Your Answer
+            </p>
+            <textarea
+              className="min-h-[180px] w-full resize-none rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm leading-6 outline-none transition focus:border-violet-300 dark:text-white"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+            />
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              {coachError ? (
+                <p className="text-sm text-rose-500 dark:text-rose-200">
+                  {coachError}
+                </p>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  {message.trim().length} characters
+                </p>
+              )}
+              <button
+                className="inline-flex items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-70"
+                style={{ background: primaryGradient }}
+                onClick={analyzeAnswer}
+                disabled={loading}
+              >
+                <Sparkles className="mr-2 h-5 w-5" />
+                {loading ? "Analyzing..." : "Analyze Answer"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/[0.08] p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-100">
+                AI Answer
+              </p>
+              {renderSpeakerButton("answer", coachResponse, !analysis)}
+            </div>
+            <p className="whitespace-pre-line text-sm leading-7 text-slate-600 dark:text-slate-300">
+              {coachResponse}
             </p>
           </div>
-        ))}
-      </div>
-      <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_1.1fr]">
-        <div className="rounded-lg border border-white/10 bg-slate-950/90 p-5 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-200">
-            Daily Speaking Topic
-          </p>
-          <p className="mt-3 text-lg font-semibold">
-            {starter.topic}
-          </p>
-          {starter.vocabularyWord ? (
-            <p className="mt-3 text-sm leading-6 text-slate-300">
-              Word of the day: {starter.vocabularyWord.word} -{" "}
-              {starter.vocabularyWord.example}
-            </p>
-          ) : null}
-          <textarea
-            className="mt-5 min-h-[150px] w-full resize-none rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm outline-none focus:border-violet-300"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-          />
-          {coachError ? (
-            <p className="mt-3 text-sm text-rose-200">{coachError}</p>
-          ) : null}
-          <button
-            className="mt-4 inline-flex items-center rounded-lg px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-70"
-            style={{ background: primaryGradient }}
-            onClick={analyzeAnswer}
-            disabled={loading}
-          >
-            <Sparkles className="mr-2 h-5 w-5" />
-            {loading ? "Analyzing..." : "Analyze Answer"}
-          </button>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          {resultCards.map(([title, text]) => (
-            <div key={title} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
-              <p className="text-sm font-bold">{title}</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                {text}
-              </p>
-            </div>
-          ))}
         </div>
       </div>
     </GlassCard>

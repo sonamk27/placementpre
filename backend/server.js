@@ -2,9 +2,9 @@ import app from "./app.js";
 import { config } from "./config/env.js";
 import { connectDatabase, retryDatabaseConnection } from "./config/database.js";
 
-const startServer = async () => {
+const startDatabaseConnection = async () => {
   try {
-    await connectDatabase();
+    await connectDatabase({ serverSelectionTimeoutMS: 3000 });
     console.log("MongoDB connected");
   } catch (error) {
     console.warn(
@@ -13,11 +13,20 @@ const startServer = async () => {
     console.warn(error.message);
   }
 
-  app.listen(config.port, () => {
+  retryDatabaseConnection();
+};
+
+const startServer = () => {
+  const server = app.listen(config.port, () => {
     console.log(`PrepMate API running on http://127.0.0.1:${config.port}`);
   });
 
-  retryDatabaseConnection();
+  server.on("error", (error) => {
+    console.error("Failed to start PrepMate API", error.message);
+    process.exit(1);
+  });
+
+  startDatabaseConnection();
 };
 
 startServer();
