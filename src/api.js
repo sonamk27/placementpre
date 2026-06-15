@@ -18,17 +18,20 @@ export const clearAuthSession = () => {
 };
 
 export const apiRequest = async (path, options = {}) => {
+  const { body, rawBody, headers: customHeaders, ...requestOptions } = options;
   const session = getAuthSession();
+  const hasJsonBody = body !== undefined;
+  const hasRawBody = rawBody !== undefined;
   const headers = {
-    ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(hasJsonBody ? { "Content-Type": "application/json" } : {}),
     ...(session?.token ? { Authorization: `Bearer ${session.token}` } : {}),
-    ...options.headers,
+    ...customHeaders,
   };
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
+    ...requestOptions,
     headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: hasRawBody ? rawBody : hasJsonBody ? JSON.stringify(body) : undefined,
   });
 
   const contentType = response.headers.get("content-type") || "";
@@ -62,6 +65,23 @@ export const communicationApi = {
   startTopic: () => apiRequest("/api/communication/start-topic", { method: "POST" }),
   analyze: (payload) =>
     apiRequest("/api/communication/analyze", { method: "POST", body: payload }),
+  transcribe: (audioBlob, { topic } = {}) => {
+    const params = new URLSearchParams();
+
+    if (topic) {
+      params.set("topic", topic);
+    }
+
+    const query = params.toString();
+
+    return apiRequest(`/api/communication/transcribe${query ? `?${query}` : ""}`, {
+      method: "POST",
+      rawBody: audioBlob,
+      headers: {
+        "Content-Type": audioBlob?.type || "application/octet-stream",
+      },
+    });
+  },
   history: () => apiRequest("/api/communication/history?limit=5"),
   stats: () => apiRequest("/api/communication/stats"),
   weeklyReport: () => apiRequest("/api/communication/report/weekly"),

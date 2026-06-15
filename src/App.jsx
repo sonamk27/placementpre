@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   BrowserRouter,
@@ -46,6 +46,7 @@ import {
   ListChecks,
   Map,
   Menu,
+  Mic,
   MessageCircle,
   MessageSquareText,
   Mic2,
@@ -53,6 +54,7 @@ import {
   Pencil,
   Play,
   Plus,
+  RefreshCw,
   Rocket,
   Search,
   Send,
@@ -60,6 +62,7 @@ import {
   ShieldCheck,
   Sparkles,
   Star,
+  Square,
   Sun,
   Target,
   Timer,
@@ -691,12 +694,343 @@ function CommunicationCoach() {
     },
     motivationQuote: "Every polished answer starts as one honest attempt.",
   };
+  const createChatId = () =>
+    `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const createQuestionMessage = (payload) => ({
+    id: createChatId(),
+    role: "assistant",
+    type: "question",
+    starter: payload,
+  });
   const [starter, setStarter] = useState(defaultStarter);
-  const [message, setMessage] = useState("Today I practice React and DSA.");
+  const [chatMessages, setChatMessages] = useState([
+    createQuestionMessage(defaultStarter),
+  ]);
+  const [message, setMessage] = useState("");
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [questionLoading, setQuestionLoading] = useState(false);
   const [coachError, setCoachError] = useState("");
   const [speakingKey, setSpeakingKey] = useState("");
+  const [microphones, setMicrophones] = useState([]);
+  const [selectedMicId, setSelectedMicId] = useState("");
+  const [micError, setMicError] = useState("");
+  const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [transcribing, setTranscribing] = useState(false);
+  const mediaRecorderRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const streamRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const chatEndRef = useRef(null);
+
+  const isAudioRecordingSupported = () =>
+    typeof window !== "undefined" &&
+    typeof navigator !== "undefined" &&
+    navigator.mediaDevices?.getUserMedia &&
+    navigator.mediaDevices?.enumerateDevices &&
+    window.MediaRecorder;
+
+  const stopActiveStream = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  };
+
+  const getSpeechRecognition = () => {
+    if (typeof window === "undefined") return null;
+
+    return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+  };
+
+  const getRecorderMimeType = () => {
+    if (
+      typeof window === "undefined" ||
+      !window.MediaRecorder?.isTypeSupported
+    ) {
+      return "";
+    }
+
+    return (
+      [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/mp4",
+        "audio/ogg;codecs=opus",
+      ].find((type) => window.MediaRecorder.isTypeSupported(type)) || ""
+    );
+  };
+
+  const refreshMicrophones = async ({ requestPermission = false } = {}) => {
+    if (!isAudioRecordingSupported()) {
+      setMicError("Microphone recording is not supported in this browser.");
+      return;
+    }
+
+    let permissionStream;
+
+    try {
+      setMicError("");
+
+      if (requestPermission) {
+        permissionStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+      }
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter((device) => device.kind === "audioinput");
+
+      setMicrophones(audioInputs);
+      setSelectedMicId((current) =>
+        current && audioInputs.some((device) => device.deviceId === current)
+          ? current
+          : audioInputs[0]?.deviceId || "",
+      );
+
+      if (!audioInputs.length) {
+        setMicError("No microphone input was found.");
+      }
+    } catch (error) {
+      setMicError(
+        error?.name === "NotAllowedError"
+          ? "Microphone permission was blocked."
+          : "Could not access microphone inputs.",
+      );
+    } finally {
+      permissionStream?.getTracks().forEach((track) => track.stop());
+    }
+  };
+
+  const transcribeRecording = async (audioBlob) => {
+    setTranscribing(true);
+    setCoachError("");
+    setMicError("");
+
+    try {
+      const result = await communicationApi.transcribe(audioBlob, {
+        topic: starter.topic,
+      });
+      const transcript = String(result.text || "").trim();
+
+      if (!transcript) {
+        setMicError(
+          result.message || "I could not hear speech clearly. Try recording again.",
+        );
+        return;
+      }
+
+      setMessage((current) =>
+        current.trim() ? `${current.trim()}\n\n${transcript}` : transcript,
+      );
+    } catch (error) {
+      setMicError(error.message);
+    } finally {
+      setTranscribing(false);
+    }
+  };
+
+  const stopVoiceAnswer = () => {
+    const recognition = recognitionRef.current;
+
+    if (recognition) {
+      recognition.stop();
+      return;
+    }
+
+    const recorder = mediaRecorderRef.current;
+
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop();
+    }
+  };
+
+  const startBrowserSpeechAnswer = () => {
+    const SpeechRecognition = getSpeechRecognition();
+
+    if (!SpeechRecognition) {
+      return false;
+    }
+
+    let finalTranscript = "";
+    let endedWithError = false;
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      let nextFinal = "";
+
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const result = event.results[index];
+
+        if (result.isFinal) {
+          nextFinal += result[0].transcript;
+        }
+      }
+
+      if (nextFinal.trim()) {
+        finalTranscript = `${finalTranscript} ${nextFinal}`.trim();
+      }
+    };
+
+    recognition.onerror = (event) => {
+      endedWithError = true;
+      const blocked = event.error === "not-allowed" || event.error === "service-not-allowed";
+
+      setMicError(
+        blocked
+          ? "Microphone permission was blocked."
+          : "Speech recognition stopped. Try speaking again.",
+      );
+      setRecording(false);
+      recognitionRef.current = null;
+    };
+
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      setRecording(false);
+
+      const transcript = finalTranscript.trim();
+
+      if (transcript) {
+        setMicError("");
+        setMessage((current) =>
+          current.trim() ? `${current.trim()}\n\n${transcript}` : transcript,
+        );
+      } else if (!endedWithError) {
+        setMicError("I could not hear speech clearly. Try speaking again.");
+      }
+    };
+
+    try {
+      recognitionRef.current = recognition;
+      recognition.start();
+      setRecording(true);
+      return true;
+    } catch {
+      recognitionRef.current = null;
+      setRecording(false);
+      setMicError("Could not start speech recognition in this browser.");
+      return true;
+    }
+  };
+
+  const startVoiceAnswer = async () => {
+    if (recording) {
+      stopVoiceAnswer();
+      return;
+    }
+
+    setCoachError("");
+    setMicError("");
+
+    if (startBrowserSpeechAnswer()) {
+      return;
+    }
+
+    if (!isAudioRecordingSupported()) {
+      setMicError("Microphone recording is not supported in this browser.");
+      return;
+    }
+
+    try {
+      audioChunksRef.current = [];
+
+      const audioConstraint = selectedMicId
+        ? {
+            deviceId: { exact: selectedMicId },
+            echoCancellation: true,
+            noiseSuppression: true,
+          }
+        : {
+            echoCancellation: true,
+            noiseSuppression: true,
+          };
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: audioConstraint,
+      });
+      const mimeType = getRecorderMimeType();
+      const recorder = new window.MediaRecorder(
+        stream,
+        mimeType ? { mimeType } : undefined,
+      );
+
+      streamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onerror = () => {
+        setMicError("Recording failed. Try another microphone.");
+        stopActiveStream();
+        setRecording(false);
+      };
+
+      recorder.onstop = () => {
+        const chunks = audioChunksRef.current;
+        audioChunksRef.current = [];
+        stopActiveStream();
+        setRecording(false);
+
+        if (!chunks.length) {
+          setMicError("I did not catch any audio. Try again.");
+          return;
+        }
+
+        const audioBlob = new Blob(chunks, {
+          type: recorder.mimeType || mimeType || "audio/webm",
+        });
+
+        if (audioBlob.size < 1024) {
+          setMicError("I did not catch enough audio. Try again.");
+          return;
+        }
+
+        transcribeRecording(audioBlob);
+      };
+
+      recorder.start();
+      setRecording(true);
+      refreshMicrophones();
+    } catch (error) {
+      stopActiveStream();
+      setRecording(false);
+      setMicError(
+        error?.name === "NotAllowedError"
+          ? "Microphone permission was blocked."
+          : "Could not start recording from that microphone.",
+      );
+    }
+  };
+
+  const loadRandomQuestion = async ({ replace = false } = {}) => {
+    setQuestionLoading(true);
+    setCoachError("");
+    setMicError("");
+
+    try {
+      const topicPayload = await communicationApi.startTopic();
+      const questionMessage = createQuestionMessage(topicPayload);
+
+      setStarter(topicPayload);
+      setAnalysis(null);
+      setMessage("");
+      setChatMessages((current) =>
+        replace ? [questionMessage] : [...current, questionMessage],
+      );
+    } catch (error) {
+      setCoachError(error.message);
+    } finally {
+      setQuestionLoading(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -707,6 +1041,7 @@ function CommunicationCoach() {
 
         if (!active) return;
         setStarter(topicPayload);
+        setChatMessages([createQuestionMessage(topicPayload)]);
       } catch (error) {
         if (!active) return;
         setCoachError(error.message);
@@ -721,36 +1056,119 @@ function CommunicationCoach() {
   }, []);
 
   useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [chatMessages, loading, questionLoading, transcribing]);
+
+  useEffect(() => {
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices?.enumerateDevices
+    ) {
+      return undefined;
+    }
+
+    let active = true;
+    const syncMicrophones = async () => {
+      if (!active) return;
+      await refreshMicrophones();
+    };
+
+    syncMicrophones();
+    navigator.mediaDevices.addEventListener?.("devicechange", syncMicrophones);
+
+    return () => {
+      active = false;
+      navigator.mediaDevices.removeEventListener?.("devicechange", syncMicrophones);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!recording) {
+      setRecordingSeconds(0);
+      return undefined;
+    }
+
+    setRecordingSeconds(0);
+    const timer = window.setInterval(() => {
+      setRecordingSeconds((seconds) => seconds + 1);
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [recording]);
+
+  useEffect(() => {
     return () => {
       if (typeof window !== "undefined" && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
+
+      const recognition = recognitionRef.current;
+
+      if (recognition) {
+        recognition.onend = null;
+        recognition.onerror = null;
+        recognition.stop();
+      }
+
+      const recorder = mediaRecorderRef.current;
+
+      if (recorder && recorder.state !== "inactive") {
+        recorder.onstop = null;
+        recorder.stop();
+      }
+
+      stopActiveStream();
     };
   }, []);
 
   const analyzeAnswer = async () => {
-    if (!message.trim()) return;
+    const answer = message.trim();
 
+    if (!answer) return;
+
+    const activeStarter = starter;
     setLoading(true);
     setCoachError("");
+    setMicError("");
+    setAnalysis(null);
+    setMessage("");
+    setChatMessages((current) => [
+      ...current,
+      {
+        id: createChatId(),
+        role: "user",
+        type: "answer",
+        text: answer,
+      },
+    ]);
 
     try {
-      const health = await communicationApi.health();
-
-      if (health.database !== "connected") {
-        setCoachError(
-          "Database is not connected. Start MongoDB before analyzing and saving answers.",
-        );
-        return;
-      }
-
       const result = await communicationApi.analyze({
-        message,
-        topic: starter.topic,
+        message: answer,
+        topic: activeStarter.topic,
       });
+
       setAnalysis(result);
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: createChatId(),
+          role: "assistant",
+          type: "feedback",
+          analysis: result,
+        },
+      ]);
     } catch (error) {
       setCoachError(error.message);
+      setChatMessages((current) => [
+        ...current,
+        {
+          id: createChatId(),
+          role: "assistant",
+          type: "error",
+          text: error.message,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -787,27 +1205,35 @@ function CommunicationCoach() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const questionText = starter.vocabularyWord
-    ? `${starter.topic} Word of the day: ${starter.vocabularyWord.word}. ${starter.vocabularyWord.example}`
-    : starter.topic;
-  const vocabularySuggestions =
-    analysis?.betterVocabularySuggestions?.filter(Boolean).join(", ") || "";
-  const mistakes = analysis?.mistakes?.filter(Boolean).join(" ") || "";
-  const coachResponse = analysis
-    ? [
-        `Corrected answer: ${analysis.correctedMessage}`,
-        `Feedback: ${analysis.feedback}`,
-        mistakes ? `Grammar notes: ${mistakes}` : "",
-        vocabularySuggestions ? `Better vocabulary: ${vocabularySuggestions}` : "",
-        analysis.improvementTip ? `Tip: ${analysis.improvementTip}` : "",
-        analysis.followUpQuestion
-          ? `Follow-up question: ${analysis.followUpQuestion}`
-          : "",
-        `Scores: Grammar ${analysis.grammarScore}/10, Vocabulary ${analysis.vocabularyScore}/10, Fluency ${analysis.fluencyScore}/10, Confidence ${analysis.confidenceScore}/10.`,
-      ]
-        .filter(Boolean)
-        .join("\n\n")
-    : "Ready for your answer.";
+  const getQuestionText = (questionStarter) =>
+    questionStarter?.vocabularyWord
+      ? `${questionStarter.topic} Word of the day: ${questionStarter.vocabularyWord.word}. ${questionStarter.vocabularyWord.example}`
+      : questionStarter?.topic || "";
+  const getCoachResponse = (result) => {
+    if (!result) return "";
+
+    const vocabularySuggestions =
+      result.betterVocabularySuggestions?.filter(Boolean).join(", ") || "";
+    const mistakes = result.mistakes?.filter(Boolean).join(" ") || "";
+
+    return [
+      `Corrected answer: ${result.correctedMessage}`,
+      `Feedback: ${result.feedback}`,
+      mistakes ? `Grammar notes: ${mistakes}` : "",
+      vocabularySuggestions ? `Better vocabulary: ${vocabularySuggestions}` : "",
+      result.improvementTip ? `Tip: ${result.improvementTip}` : "",
+      result.followUpQuestion ? `Follow-up question: ${result.followUpQuestion}` : "",
+      `Scores: Grammar ${result.grammarScore}/10, Vocabulary ${result.vocabularyScore}/10, Fluency ${result.fluencyScore}/10, Confidence ${result.confidenceScore}/10.`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  };
+  const answerStatus = micError || coachError;
+  const answerMeta = transcribing
+    ? "Transcribing answer..."
+    : recording
+      ? `Recording ${recordingSeconds}s`
+      : `${message.trim().length} characters`;
 
   const renderSpeakerButton = (key, text, disabled = false) => (
     <button
@@ -816,8 +1242,8 @@ function CommunicationCoach() {
       disabled={disabled}
       className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition ${
         speakingKey === key
-          ? "border-emerald-300/60 bg-emerald-400/20 text-emerald-100"
-          : "border-white/10 bg-white/10 text-slate-200 hover:bg-white/15"
+          ? "border-emerald-300/60 bg-emerald-400/20 text-emerald-700 dark:text-emerald-100"
+          : "border-white/10 bg-white/10 text-slate-700 hover:bg-white/15 dark:text-slate-200"
       } disabled:cursor-not-allowed disabled:opacity-45`}
       aria-label={speakingKey === key ? "Stop reading" : "Read aloud"}
       title={speakingKey === key ? "Stop reading" : "Read aloud"}
@@ -826,86 +1252,263 @@ function CommunicationCoach() {
     </button>
   );
 
+  const renderQuestionBubble = (item) => {
+    const questionStarter = item.starter || starter;
+    const speechText = getQuestionText(questionStarter);
+
+    return (
+      <>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
+            Coach
+          </p>
+          {renderSpeakerButton(item.id, speechText)}
+        </div>
+        <p className="text-base font-semibold leading-7 text-slate-950 dark:text-white">
+          {questionStarter.topic}
+        </p>
+        {questionStarter.vocabularyWord ? (
+          <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Word of the day: {questionStarter.vocabularyWord.word} -{" "}
+            {questionStarter.vocabularyWord.example}
+          </p>
+        ) : null}
+      </>
+    );
+  };
+
+  const renderFeedbackBubble = (item) => {
+    const result = item.analysis;
+    const speechText = getCoachResponse(result);
+    const scores = [
+      ["Grammar", result.grammarScore],
+      ["Vocabulary", result.vocabularyScore],
+      ["Fluency", result.fluencyScore],
+      ["Confidence", result.confidenceScore],
+    ];
+
+    return (
+      <>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
+            Feedback
+          </p>
+          {renderSpeakerButton(item.id, speechText)}
+        </div>
+        <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+          {result.feedback}
+        </p>
+        <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.08] p-3">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">
+            Corrected Answer
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-100">
+            {result.correctedMessage}
+          </p>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {scores.map(([label, value]) => (
+            <div
+              key={label}
+              className="rounded-lg border border-white/10 bg-white/[0.08] p-3"
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                {label}
+              </p>
+              <p className="mt-1 text-lg font-black">{value}/10</p>
+            </div>
+          ))}
+        </div>
+        {result.improvementTip ? (
+          <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Tip: {result.improvementTip}
+          </p>
+        ) : null}
+        {result.followUpQuestion ? (
+          <p className="mt-3 text-sm font-semibold leading-6 text-violet-700 dark:text-violet-100">
+            Follow-up: {result.followUpQuestion}
+          </p>
+        ) : null}
+      </>
+    );
+  };
+
   return (
     <GlassCard id="communication" className="overflow-hidden p-0">
       <div className="border-b border-white/10 bg-slate-950/90 p-4 text-white sm:p-5">
-        <div className="flex items-center gap-3">
-          <IconBadge icon={Mic2} className="text-emerald-200" />
-          <div className="min-w-0">
-            <h3 className="text-xl font-black sm:text-2xl">Communication Q&A</h3>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <IconBadge icon={Mic2} className="text-emerald-200" />
+            <div className="min-w-0">
+              <h3 className="text-xl font-black sm:text-2xl">
+                Communication Chat
+              </h3>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => loadRandomQuestion()}
+            disabled={questionLoading || recording || transcribing}
+            className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {questionLoading ? "Loading..." : "New Question"}
+          </button>
         </div>
       </div>
 
-      <div className="space-y-5 p-4 sm:p-6">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-white">
-            <Bot className="h-5 w-5" />
-          </div>
-          <div className="min-w-0 flex-1 rounded-lg border border-white/10 bg-slate-950/90 p-4 text-white">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
-                Question
-              </p>
-              {renderSpeakerButton("question", questionText)}
+      <div className="flex h-[min(76vh,760px)] min-h-[620px] flex-col">
+        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
+          {chatMessages.map((item) => {
+            const isUser = item.role === "user";
+
+            return (
+              <div
+                key={item.id}
+                className={`flex items-start ${
+                  isUser ? "justify-end" : "justify-start"
+                }`}
+              >
+                <div
+                  className={`min-w-0 max-w-[92%] rounded-lg p-4 sm:max-w-[78%] ${
+                    isUser
+                      ? "bg-violet-500 text-white"
+                      : item.type === "error"
+                        ? "border border-rose-400/30 bg-rose-500/[0.14] text-rose-900 dark:text-rose-100"
+                        : "border border-white/10 bg-white/[0.08]"
+                  }`}
+                >
+                  {item.type === "question" ? renderQuestionBubble(item) : null}
+                  {item.type === "answer" ? (
+                    <p className="whitespace-pre-line text-sm leading-7">
+                      {item.text}
+                    </p>
+                  ) : null}
+                  {item.type === "feedback" ? renderFeedbackBubble(item) : null}
+                  {item.type === "error" ? (
+                    <p className="text-sm leading-6">{item.text}</p>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+
+          {loading ? (
+            <div className="flex items-start">
+              <div className="rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm text-slate-600 dark:text-slate-300">
+                Reviewing your answer...
+              </div>
             </div>
-            <p className="text-lg font-semibold leading-7">{starter.topic}</p>
-            {starter.vocabularyWord ? (
-              <p className="mt-3 text-sm leading-6 text-slate-300">
-                Word of the day: {starter.vocabularyWord.word} -{" "}
-                {starter.vocabularyWord.example}
-              </p>
-            ) : null}
-          </div>
+          ) : null}
+          <div ref={chatEndRef} />
         </div>
 
-        <div className="flex justify-end">
-          <div className="w-full rounded-lg border border-violet-300/20 bg-violet-500/[0.12] p-4 sm:max-w-[88%]">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-100">
-              Your Answer
-            </p>
-            <textarea
-              className="min-h-[180px] w-full resize-none rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm leading-6 outline-none transition focus:border-violet-300 dark:text-white"
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-            />
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              {coachError ? (
-                <p className="text-sm text-rose-500 dark:text-rose-200">
-                  {coachError}
-                </p>
-              ) : (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {message.trim().length} characters
-                </p>
-              )}
-              <button
-                className="inline-flex items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-70"
-                style={{ background: primaryGradient }}
-                onClick={analyzeAnswer}
-                disabled={loading}
+        <div className="border-t border-white/10 bg-white/[0.06] p-4 sm:p-5">
+          <div className="mb-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+            <label className="min-w-0">
+              <span className="mb-2 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">
+                Microphone
+              </span>
+              <select
+                className="h-12 w-full rounded-lg border border-white/10 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-violet-300 dark:bg-slate-950 dark:text-white"
+                value={selectedMicId}
+                onChange={(event) => setSelectedMicId(event.target.value)}
+                disabled={recording || transcribing}
               >
-                <Sparkles className="mr-2 h-5 w-5" />
-                {loading ? "Analyzing..." : "Analyze Answer"}
+                {microphones.length ? (
+                  microphones.map((device, index) => (
+                    <option
+                      key={`${device.deviceId || "mic"}-${index}`}
+                      value={device.deviceId}
+                    >
+                      {device.label || `Microphone ${index + 1}`}
+                    </option>
+                  ))
+                ) : (
+                  <option value="">Default microphone</option>
+                )}
+              </select>
+            </label>
+
+            <div className="flex flex-col gap-2 sm:flex-row lg:self-end">
+              <button
+                type="button"
+                onClick={() => refreshMicrophones({ requestPermission: true })}
+                disabled={recording || transcribing}
+                className="inline-flex h-12 w-full items-center justify-center rounded-lg border border-white/10 bg-white/10 text-slate-700 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-100 sm:w-12"
+                aria-label="Refresh microphones"
+                title="Refresh microphones"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={recording ? stopVoiceAnswer : startVoiceAnswer}
+                disabled={transcribing}
+                className={`inline-flex h-12 min-w-[168px] items-center justify-center rounded-lg px-4 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${
+                  recording ? "bg-rose-500 hover:bg-rose-400" : "hover:scale-[1.01]"
+                }`}
+                style={recording ? undefined : { background: primaryGradient }}
+              >
+                {recording ? (
+                  <Square className="mr-2 h-4 w-4 fill-white/20" />
+                ) : (
+                  <Mic className="mr-2 h-4 w-4" />
+                )}
+                {recording
+                  ? `Stop (${recordingSeconds}s)`
+                  : transcribing
+                    ? "Transcribing..."
+                    : "Speak Answer"}
               </button>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-500 text-white">
-            <Sparkles className="h-5 w-5" />
+          <div className="flex items-end gap-2 rounded-lg border border-white/10 bg-white/[0.08] p-2">
+            <textarea
+              className="max-h-40 min-h-16 flex-1 resize-none bg-transparent px-3 py-3 text-sm leading-6 outline-none dark:text-white"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+                  analyzeAnswer();
+                }
+              }}
+              placeholder="Type your answer or use the mic"
+            />
+            <button
+              type="button"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-white disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ background: primaryGradient }}
+              onClick={analyzeAnswer}
+              disabled={loading || recording || transcribing || !message.trim()}
+              aria-label="Send answer"
+              title="Send answer"
+            >
+              <Send className="h-5 w-5" />
+            </button>
           </div>
-          <div className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/[0.08] p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-100">
-                AI Answer
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            {answerStatus ? (
+              <p className="text-sm text-rose-500 dark:text-rose-200">
+                {answerStatus}
               </p>
-              {renderSpeakerButton("answer", coachResponse, !analysis)}
-            </div>
-            <p className="whitespace-pre-line text-sm leading-7 text-slate-600 dark:text-slate-300">
-              {coachResponse}
-            </p>
+            ) : (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {answerMeta}
+              </p>
+            )}
+            {analysis ? (
+              <button
+                type="button"
+                onClick={() => loadRandomQuestion()}
+                disabled={questionLoading || recording || transcribing}
+                className="inline-flex items-center justify-center rounded-lg border border-violet-300/30 bg-violet-500/[0.12] px-4 py-2 text-sm font-bold text-violet-700 transition hover:bg-violet-500/[0.18] disabled:cursor-not-allowed disabled:opacity-60 dark:text-violet-100"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Next Random Question
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

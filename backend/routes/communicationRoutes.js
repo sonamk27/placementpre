@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import rateLimit from "express-rate-limit";
 import {
   analyzeMessage,
@@ -8,6 +8,7 @@ import {
   getStats,
   getWeeklyReportController,
   startTopic,
+  transcribeAnswerAudio,
 } from "../controllers/communicationController.js";
 import { attachCommunicationUser } from "../middleware/authMiddleware.js";
 import { requireDatabase } from "../middleware/databaseMiddleware.js";
@@ -33,10 +34,15 @@ router.post("/start-topic", coachLimiter, startTopic);
 router.post(
   "/analyze",
   coachLimiter,
-  requireDatabase,
   analyzeValidator,
   validateRequest,
   analyzeMessage,
+);
+router.post(
+  "/transcribe",
+  coachLimiter,
+  express.raw({ type: ["audio/*", "application/octet-stream"], limit: "12mb" }),
+  transcribeAnswerAudio,
 );
 router.get("/history", historyValidator, validateRequest, getHistory);
 router.get("/stats", getStats);

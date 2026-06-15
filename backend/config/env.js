@@ -34,6 +34,8 @@ export const config = {
   openai: {
     apiKey: process.env.OPENAI_API_KEY,
     model: process.env.OPENAI_MODEL || "gpt-5.5",
+    transcriptionModel:
+      process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe",
   },
   allowAiFallback:
     process.env.ALLOW_AI_FALLBACK === "true" ||

@@ -73,9 +73,39 @@ const pickDaily = (items, userId, date, salt = "") => {
   return items[seed % items.length];
 };
 
+let lastRandomTopic = "";
+
+const pickRandom = (items) => items[Math.floor(Math.random() * items.length)];
+
+const pickRandomExcept = (items, previous) => {
+  if (items.length < 2) {
+    return pickRandom(items);
+  }
+
+  let next = pickRandom(items);
+
+  while (next === previous) {
+    next = pickRandom(items);
+  }
+
+  return next;
+};
+
 export const getDailyCommunicationStarter = (userId, date = new Date()) => ({
   date: dateKey(date),
   topic: pickDaily(topics, userId, date, "topic"),
   vocabularyWord: pickDaily(vocabulary, userId, date, "vocabulary"),
   motivationQuote: pickDaily(quotes, userId, date, "quote"),
 });
+
+export const getRandomCommunicationStarter = () => {
+  const topic = pickRandomExcept(topics, lastRandomTopic);
+  lastRandomTopic = topic;
+
+  return {
+    date: dateKey(),
+    topic,
+    vocabularyWord: pickRandom(vocabulary),
+    motivationQuote: pickRandom(quotes),
+  };
+};

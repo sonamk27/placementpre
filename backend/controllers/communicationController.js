@@ -8,9 +8,13 @@ import {
   toHistoryCsv,
   updateDailyProgressForSession,
 } from "../services/communicationAnalyticsService.js";
-import { getDailyCommunicationStarter } from "../services/dailyGeneratorService.js";
-import { analyzeWithCommunicationCoach } from "../services/openaiCommunicationService.js";
+import { getRandomCommunicationStarter } from "../services/dailyGeneratorService.js";
+import {
+  analyzeWithCommunicationCoach,
+  transcribeCommunicationAudio,
+} from "../services/openaiCommunicationService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { HttpError } from "../utils/httpError.js";
 
 const mapSession = (session) => ({
   id: session._id,
@@ -68,17 +72,49 @@ const emptyStats = () => {
 };
 
 export const startTopic = asyncHandler(async (req, res) => {
-  res.json(getDailyCommunicationStarter(req.user._id));
+  res.json(getRandomCommunicationStarter());
 });
 
 export const analyzeMessage = asyncHandler(async (req, res) => {
-  const userId = new Types.ObjectId(req.user._id);
-  const starter = getDailyCommunicationStarter(req.user._id);
+  const databaseConnected = isDatabaseConnected();
+  const userId = databaseConnected ? new Types.ObjectId(req.user._id) : null;
+  const starter = getRandomCommunicationStarter();
   const topic = req.body.topic || starter.topic;
   const analysis = await analyzeWithCommunicationCoach({
     message: req.body.message,
     topic,
   });
+
+  if (!databaseConnected) {
+    return res.status(200).json({
+      originalMessage: req.body.message,
+      correctedMessage: analysis.correctedMessage,
+      grammarScore: analysis.grammarScore,
+      vocabularyScore: analysis.vocabularyScore,
+      fluencyScore: analysis.fluencyScore,
+      confidenceScore: analysis.confidenceScore,
+      feedback: analysis.feedback,
+      mistakes: analysis.mistakes,
+      betterVocabularySuggestions: analysis.betterVocabularySuggestions,
+      improvementTip: analysis.improvementTip,
+      recommendations: analysis.recommendations,
+      followUpQuestion: analysis.followUpQuestion,
+      motivationQuote: analysis.motivationQuote || starter.motivationQuote,
+      saved: false,
+      coachJson: {
+        correctedVersion: analysis.correctedMessage,
+        grammarScore: analysis.grammarScore,
+        vocabularyScore: analysis.vocabularyScore,
+        fluencyScore: analysis.fluencyScore,
+        confidenceScore: analysis.confidenceScore,
+        mistakes: analysis.mistakes,
+        betterVocabularySuggestions: analysis.betterVocabularySuggestions,
+        improvementTip: analysis.improvementTip,
+        followUpQuestion: analysis.followUpQuestion,
+        motivationQuote: analysis.motivationQuote || starter.motivationQuote,
+      },
+    });
+  }
 
   const session = await CommunicationSession.create({
     userId,
@@ -114,6 +150,7 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
     recommendations: session.aiRecommendations,
     followUpQuestion: session.followUpQuestion,
     motivationQuote: session.motivationQuote,
+    saved: true,
     coachJson: {
       correctedVersion: session.correctedMessage,
       grammarScore: session.grammarScore,
@@ -127,6 +164,22 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
       motivationQuote: session.motivationQuote,
     },
   });
+});
+
+export const transcribeAnswerAudio = asyncHandler(async (req, res) => {
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    throw new HttpError(400, "Audio recording is required");
+  }
+
+  const topic =
+    typeof req.query.topic === "string" ? req.query.topic.slice(0, 240) : "";
+  const result = await transcribeCommunicationAudio({
+    audioBuffer: req.body,
+    mimeType: req.get("content-type"),
+    topic,
+  });
+
+  res.json(result);
 });
 
 export const getHistory = asyncHandler(async (req, res) => {

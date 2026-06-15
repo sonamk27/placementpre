@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import OpenAI, { toFile } from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import { config } from "../config/env.js";
@@ -55,6 +55,19 @@ const getOpenAIClient = () => {
 };
 
 const clampScore = (score) => Math.max(1, Math.min(10, Math.round(score)));
+
+const audioExtensionByMimeType = {
+  "audio/webm": "webm",
+  "audio/ogg": "ogg",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/mp4": "mp4",
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+};
+
+const getCleanMimeType = (mimeType = "") =>
+  String(mimeType).split(";")[0].trim().toLowerCase() || "audio/webm";
 
 const localFallbackAnalysis = (message, topic) => {
   const trimmed = message.trim();
@@ -147,5 +160,47 @@ export const analyzeWithCommunicationCoach = async ({ message, topic }) => {
     }
 
     throw new HttpError(502, "AI communication analysis failed", error.message);
+  }
+};
+
+export const transcribeCommunicationAudio = async ({
+  audioBuffer,
+  mimeType,
+  topic,
+}) => {
+  if (!Buffer.isBuffer(audioBuffer) || audioBuffer.length === 0) {
+    throw new HttpError(400, "Audio recording is required");
+  }
+
+  const openai = getOpenAIClient();
+  if (!openai) {
+    return {
+      text: "",
+      message:
+        "Speech transcription needs OPENAI_API_KEY, or use a browser with built-in speech recognition.",
+    };
+  }
+
+  const cleanMimeType = getCleanMimeType(mimeType);
+  const extension = audioExtensionByMimeType[cleanMimeType] || "webm";
+  const file = await toFile(audioBuffer, `communication-answer.${extension}`, {
+    type: cleanMimeType,
+  });
+
+  try {
+    const transcription = await openai.audio.transcriptions.create({
+      file,
+      model: config.openai.transcriptionModel,
+      language: "en",
+      prompt: topic
+        ? `This is a student's spoken answer for this placement communication prompt: ${topic}`
+        : "This is a student's spoken answer for placement communication practice.",
+    });
+
+    return {
+      text: String(transcription?.text || "").trim(),
+    };
+  } catch (error) {
+    throw new HttpError(502, "Audio transcription failed", error.message);
   }
 };
