@@ -1,0 +1,2 @@
+MongoDB is not connected yet. API will stay online and retry in the background.
+connect ECONNREFUSED 127.0.0.1:27017

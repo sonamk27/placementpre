@@ -1,0 +1,3 @@
+PrepMate API running on http://127.0.0.1:5001
+[0mGET /api/planner/today [32m200[0m 13.912 ms - 1026[0m
+[0mGET /api/planner/today [32m200[0m 1.924 ms - 1026[0m

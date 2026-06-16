@@ -1,0 +1,9 @@
+=5001 : The term '=5001' is not recognized as the name of a cmdlet, function, script file, or operable program. Check 
+the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At line:1 char:1
++ ='5001'; node backend/server.js
++ ~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (=5001:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 
+Failed to start PrepMate API listen EADDRINUSE: address already in use :::5000

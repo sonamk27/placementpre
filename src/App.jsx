@@ -75,7 +75,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { communicationApi } from "./api";
+import { communicationApi, plannerApi } from "./api";
 
 ChartJS.register(
   CategoryScale,
@@ -201,6 +201,29 @@ const plannerGoals = [
   ["Project Development", "Low", "60 min"],
 ];
 
+const defaultPlannerGoals = plannerGoals.map(([title, priority, estimate], index) => ({
+  id: `goal-${index}`,
+  title,
+  priority,
+  estimate,
+  completed: false,
+}));
+
+const defaultPlannerTasks = [
+  ["Revise sliding window", "High", "45 min"],
+  ["Build SQL joins notes", "Medium", "30 min"],
+  ["Record intro answer", "High", "15 min"],
+].map(([title, priority, estimate], index) => ({
+  id: `task-${index}`,
+  title,
+  priority,
+  estimate,
+  completed: false,
+}));
+
+const defaultPlannerSuggestion =
+  "Rearrange tasks by interview impact, finish DSA before lower-priority applications, and reserve 20 minutes for reflection.";
+
 const roadmapPlans = {
   "MERN Developer": [
     ["Week 1", "JavaScript depth, Git workflow, API basics"],
@@ -255,6 +278,15 @@ const priorityStyles = {
   Medium: "border-amber-300/40 bg-amber-400/[0.15] text-amber-100",
   Low: "border-emerald-300/40 bg-emerald-400/[0.15] text-emerald-100",
 };
+
+const normalizePlannerItems = (items, fallback, prefix) =>
+  (Array.isArray(items) ? items : fallback).map((item, index) => ({
+    id: item.id || `${prefix}-${index}`,
+    title: item.title || "",
+    priority: priorityStyles[item.priority] ? item.priority : "Medium",
+    estimate: item.estimate || "25 min",
+    completed: Boolean(item.completed),
+  }));
 
 function GlassCard({ children, className = "", id }) {
   return (
@@ -1692,17 +1724,117 @@ function InterviewPrep() {
 }
 
 function PlannerAndTodo() {
-  const [tasks, setTasks] = useState([
-    ["Revise sliding window", "High", "45 min"],
-    ["Build SQL joins notes", "Medium", "30 min"],
-    ["Record intro answer", "High", "15 min"],
-  ]);
+  const [goals, setGoals] = useState(defaultPlannerGoals);
+  const [tasks, setTasks] = useState(defaultPlannerTasks);
   const [taskText, setTaskText] = useState("Apply to 2 internships");
+  const [suggestion, setSuggestion] = useState(defaultPlannerSuggestion);
+  const [plannerPersisted, setPlannerPersisted] = useState(false);
+  const [plannerLoading, setPlannerLoading] = useState(true);
+  const [plannerNotice, setPlannerNotice] = useState("");
+
+  const syncPlanner = (planner) => {
+    setGoals(normalizePlannerItems(planner.goals, defaultPlannerGoals, "goal"));
+    setTasks(normalizePlannerItems(planner.tasks, defaultPlannerTasks, "task"));
+    setSuggestion(planner.suggestion || defaultPlannerSuggestion);
+    setPlannerPersisted(planner.saved !== false);
+    setPlannerNotice(
+      planner.saved === false
+        ? "Planner is running locally until MongoDB connects."
+        : "",
+    );
+  };
+
+  useEffect(() => {
+    let active = true;
+
+    const loadPlanner = async () => {
+      setPlannerLoading(true);
+
+      try {
+        const planner = await plannerApi.today();
+
+        if (active) {
+          syncPlanner(planner);
+        }
+      } catch (error) {
+        if (active) {
+          setPlannerPersisted(false);
+          setPlannerNotice(error.message || "Planner is running locally for now.");
+        }
+      } finally {
+        if (active) {
+          setPlannerLoading(false);
+        }
+      }
+    };
+
+    loadPlanner();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const savePlannerChange = async (request) => {
+    if (!plannerPersisted) return;
+
+    try {
+      const planner = await request();
+      syncPlanner(planner);
+    } catch (error) {
+      setPlannerPersisted(false);
+      setPlannerNotice(error.message || "Planner changes are local until MongoDB reconnects.");
+    }
+  };
+
+  const toggleGoal = (goal) => {
+    const completed = !goal.completed;
+
+    setGoals((current) =>
+      current.map((item) => (item.id === goal.id ? { ...item, completed } : item)),
+    );
+
+    savePlannerChange(() => plannerApi.updateGoal(goal.id, { completed }));
+  };
 
   const addTask = () => {
-    if (!taskText.trim()) return;
-    setTasks((current) => [...current, [taskText.trim(), "Medium", "25 min"]]);
+    const title = taskText.trim();
+
+    if (!title) return;
+
+    const task = {
+      id: `local-task-${Date.now()}`,
+      title,
+      priority: "Medium",
+      estimate: "25 min",
+      completed: false,
+    };
+
+    setTasks((current) => [...current, task]);
     setTaskText("");
+    savePlannerChange(() =>
+      plannerApi.addTask({
+        title: task.title,
+        priority: task.priority,
+        estimate: task.estimate,
+        completed: task.completed,
+      }),
+    );
+  };
+
+  const toggleTask = (task) => {
+    const completed = !task.completed;
+
+    setTasks((current) =>
+      current.map((item) => (item.id === task.id ? { ...item, completed } : item)),
+    );
+
+    savePlannerChange(() => plannerApi.updateTask(task.id, { completed }));
+  };
+
+  const deleteTask = (task) => {
+    setTasks((current) => current.filter((item) => item.id !== task.id));
+    savePlannerChange(() => plannerApi.deleteTask(task.id));
   };
 
   return (
@@ -1714,18 +1846,34 @@ function PlannerAndTodo() {
           AI-generated daily targets based on your progress and weak areas.
         </p>
         <div className="mt-5 space-y-3">
-          {plannerGoals.map(([goal, priority, time]) => (
+          {plannerLoading ? (
+            <p className="rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm text-slate-500 dark:text-slate-400">
+              Loading planner...
+            </p>
+          ) : null}
+          {goals.map((goal) => (
             <label
-              key={goal}
+              key={goal.id}
               className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4"
             >
-              <input type="checkbox" className="h-5 w-5 accent-violet-500" />
-              <span className="flex-1 text-sm font-semibold">{goal}</span>
-              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[priority]}`}>
-                {priority}
+              <input
+                type="checkbox"
+                checked={goal.completed}
+                onChange={() => toggleGoal(goal)}
+                className="h-5 w-5 accent-violet-500"
+              />
+              <span
+                className={`flex-1 text-sm font-semibold ${
+                  goal.completed ? "text-slate-400 line-through" : ""
+                }`}
+              >
+                {goal.title}
+              </span>
+              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[goal.priority]}`}>
+                {goal.priority}
               </span>
               <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
-                {time}
+                {goal.estimate}
               </span>
             </label>
           ))}
@@ -1752,18 +1900,31 @@ function PlannerAndTodo() {
           </button>
         </div>
         <div className="mt-5 space-y-3">
-          {tasks.map(([task, priority, estimate], index) => (
-            <div key={`${task}-${index}`} className="flex items-center gap-3 rounded-lg bg-white/[0.08] p-3">
-              <Pencil className="h-4 w-4 text-slate-400" />
-              <p className="flex-1 text-sm font-semibold">{task}</p>
-              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[priority]}`}>
-                {priority}
+          {tasks.map((task) => (
+            <div key={task.id} className="flex items-center gap-3 rounded-lg bg-white/[0.08] p-3">
+              <input
+                type="checkbox"
+                checked={task.completed}
+                onChange={() => toggleTask(task)}
+                className="h-5 w-5 accent-violet-500"
+                aria-label={`Complete ${task.title}`}
+              />
+              <Pencil className="hidden h-4 w-4 text-slate-400 sm:block" />
+              <p
+                className={`flex-1 text-sm font-semibold ${
+                  task.completed ? "text-slate-400 line-through" : ""
+                }`}
+              >
+                {task.title}
+              </p>
+              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[task.priority]}`}>
+                {task.priority}
               </span>
               <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
-                {estimate}
+                {task.estimate}
               </span>
               <button
-                onClick={() => setTasks((current) => current.filter((_, taskIndex) => taskIndex !== index))}
+                onClick={() => deleteTask(task)}
                 className="rounded-md bg-white/10 p-2"
                 aria-label="Delete task"
               >
@@ -1772,9 +1933,13 @@ function PlannerAndTodo() {
             </div>
           ))}
         </div>
+        {plannerNotice ? (
+          <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-400/[0.12] p-4 text-sm leading-6 text-amber-100">
+            {plannerNotice}
+          </div>
+        ) : null}
         <div className="mt-4 rounded-lg border border-violet-300/20 bg-violet-400/[0.12] p-4 text-sm leading-6">
-          AI Suggestion: Rearrange tasks by interview impact, finish DSA before
-          lower-priority applications, and reserve 20 minutes for reflection.
+          AI Suggestion: {suggestion}
         </div>
       </GlassCard>
     </section>

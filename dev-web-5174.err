@@ -1,0 +1,9 @@
+=http://127.0.0.1:5001 : The term '=http://127.0.0.1:5001' is not recognized as the name of a cmdlet, function, script 
+file, or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct 
+and try again.
+At line:1 char:1
++ ='http://127.0.0.1:5001'; node node_modules/vite/bin/vite.js --host 1 ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (=http://127.0.0.1:5001:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 

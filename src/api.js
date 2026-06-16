@@ -89,3 +89,15 @@ export const communicationApi = {
   exportHistory: (format = "json") =>
     apiRequest(`/api/communication/export?format=${format}`),
 };
+
+export const plannerApi = {
+  today: () => apiRequest("/api/planner/today"),
+  addTask: (payload) =>
+    apiRequest("/api/planner/tasks", { method: "POST", body: payload }),
+  updateTask: (taskId, payload) =>
+    apiRequest(`/api/planner/tasks/${taskId}`, { method: "PATCH", body: payload }),
+  deleteTask: (taskId) =>
+    apiRequest(`/api/planner/tasks/${taskId}`, { method: "DELETE" }),
+  updateGoal: (goalId, payload) =>
+    apiRequest(`/api/planner/goals/${goalId}`, { method: "PATCH", body: payload }),
+};
