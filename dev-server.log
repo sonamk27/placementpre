@@ -9,3 +9,5 @@
 [api] PrepMate API running on http://127.0.0.1:5000
 [api] [0mPOST /api/communication/start-topic [32m200[0m 21.814 ms - 374[0m
 [api] [0mPOST /api/communication/analyze [32m200[0m 11.316 ms - 2215[0m
+[api] [0mPOST /api/communication/start-topic [32m200[0m 3.282 ms - 387[0m
+[api] [0mPOST /api/communication/start-topic [32m200[0m 1.531 ms - 380[0m
