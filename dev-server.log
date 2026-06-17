@@ -8,3 +8,5 @@
 [web]   [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5173[22m/[39m
 [api] PrepMate API running on http://127.0.0.1:5000
 [api] [0mGET /api/planner/today [32m200[0m 184.151 ms - 1026[0m
+[api] [0mGET /api/planner/today [32m200[0m 2.313 ms - 1026[0m
+[api] [0mGET /api/planner/today [36m304[0m 1.453 ms - -[0m
