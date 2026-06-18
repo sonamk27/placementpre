@@ -18,6 +18,11 @@ npm run build
 Copy `.env.example` to `.env`, then set `MONGODB_URI`, `JWT_SECRET`, and
 `OPENAI_API_KEY`.
 
+The Communication Coach uses `OPENAI_MODEL` as its default analysis model and
+adds any comma-separated model slugs in `OPENAI_COMMUNICATION_MODELS` to its
+selectable model list. Speech-to-text uses `OPENAI_TRANSCRIPTION_MODEL`, with
+additional selectable transcription models from `OPENAI_TRANSCRIPTION_MODELS`.
+
 `npm run dev` starts both the Vite frontend and the Express API. Use
 `npm run client` and `npm run server` only when you want to run them separately.
 
@@ -29,6 +34,7 @@ Key endpoints:
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `GET /api/communication/models`
 - `POST /api/communication/start-topic`
 - `POST /api/communication/analyze`
 - `GET /api/communication/history`

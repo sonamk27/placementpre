@@ -1,6 +1,7 @@
 import OpenAI, { toFile } from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
+import { supportsReasoningModel } from "../config/aiModels.js";
 import { config } from "../config/env.js";
 import { HttpError } from "../utils/httpError.js";
 
@@ -52,6 +53,42 @@ const getOpenAIClient = () => {
   }
 
   return client;
+};
+
+const hasModel = (models, modelId) =>
+  models.some((model) => model.id === String(modelId || "").trim());
+
+export const getCommunicationModelOptions = () => ({
+  defaultCommunicationModel: config.openai.model,
+  defaultTranscriptionModel: config.openai.transcriptionModel,
+  communicationModels: config.openai.communicationModels,
+  transcriptionModels: config.openai.transcriptionModels,
+});
+
+export const isSupportedCommunicationModel = (modelId) =>
+  hasModel(config.openai.communicationModels, modelId);
+
+export const isSupportedTranscriptionModel = (modelId) =>
+  hasModel(config.openai.transcriptionModels, modelId);
+
+export const resolveCommunicationModel = (modelId) => {
+  const selectedModel = String(modelId || config.openai.model).trim();
+
+  if (!isSupportedCommunicationModel(selectedModel)) {
+    throw new HttpError(400, "Unsupported communication AI model");
+  }
+
+  return selectedModel;
+};
+
+export const resolveTranscriptionModel = (modelId) => {
+  const selectedModel = String(modelId || config.openai.transcriptionModel).trim();
+
+  if (!isSupportedTranscriptionModel(selectedModel)) {
+    throw new HttpError(400, "Unsupported transcription AI model");
+  }
+
+  return selectedModel;
 };
 
 const clampScore = (score) => Math.max(1, Math.min(10, Math.round(score)));
@@ -139,19 +176,24 @@ const localFallbackAnalysis = (message, topic) => {
   };
 };
 
-export const analyzeWithCommunicationCoach = async ({ message, topic }) => {
+export const analyzeWithCommunicationCoach = async ({ message, topic, model }) => {
+  const selectedModel = resolveCommunicationModel(model);
   const openai = getOpenAIClient();
 
   if (!openai) {
     if (config.allowAiFallback) {
-      return localFallbackAnalysis(message, topic);
+      return {
+        ...localFallbackAnalysis(message, topic),
+        model: selectedModel,
+        provider: "local-fallback",
+      };
     }
 
     throw new HttpError(503, "OpenAI API key is not configured");
   }
 
   const request = {
-    model: config.openai.model,
+    model: selectedModel,
     input: [
       {
         role: "system",
@@ -168,16 +210,24 @@ export const analyzeWithCommunicationCoach = async ({ message, topic }) => {
     },
   };
 
-  if (/^(gpt-5|o\d|o-)/.test(config.openai.model)) {
+  if (supportsReasoningModel(selectedModel)) {
     request.reasoning = { effort: "low" };
   }
 
   try {
     const response = await openai.responses.parse(request);
-    return response.output_parsed;
+    return {
+      ...response.output_parsed,
+      model: selectedModel,
+      provider: "openai",
+    };
   } catch (error) {
     if (config.allowAiFallback) {
-      return localFallbackAnalysis(message, topic);
+      return {
+        ...localFallbackAnalysis(message, topic),
+        model: selectedModel,
+        provider: "local-fallback",
+      };
     }
 
     throw new HttpError(502, "AI communication analysis failed", error.message);
@@ -188,15 +238,20 @@ export const transcribeCommunicationAudio = async ({
   audioBuffer,
   mimeType,
   topic,
+  model,
 }) => {
   if (!Buffer.isBuffer(audioBuffer) || audioBuffer.length === 0) {
     throw new HttpError(400, "Audio recording is required");
   }
 
   const openai = getOpenAIClient();
+  const selectedModel = resolveTranscriptionModel(model);
+
   if (!openai) {
     return {
       text: "",
+      model: selectedModel,
+      provider: "local-fallback",
       message:
         "Speech transcription needs OPENAI_API_KEY, or use a browser with built-in speech recognition.",
     };
@@ -211,7 +266,7 @@ export const transcribeCommunicationAudio = async ({
   try {
     const transcription = await openai.audio.transcriptions.create({
       file,
-      model: config.openai.transcriptionModel,
+      model: selectedModel,
       language: "en",
       prompt: topic
         ? `This is a student's spoken answer for this placement communication prompt: ${topic}`
@@ -220,6 +275,8 @@ export const transcribeCommunicationAudio = async ({
 
     return {
       text: String(transcription?.text || "").trim(),
+      model: selectedModel,
+      provider: "openai",
     };
   } catch (error) {
     throw new HttpError(502, "Audio transcription failed", error.message);

@@ -91,6 +91,26 @@ ChartJS.register(
 
 const primaryGradient =
   "linear-gradient(135deg, #6C63FF, #8B5CF6, #A855F7)";
+const COMMUNICATION_MODEL_KEY = "prepmate_communication_model";
+const fallbackCommunicationModels = [
+  {
+    id: "gpt-5.5",
+    label: "GPT-5.5",
+    description: "Best default for detailed communication coaching.",
+    default: true,
+  },
+];
+
+const getStoredCommunicationModel = () => {
+  if (typeof window === "undefined") {
+    return fallbackCommunicationModels[0].id;
+  }
+
+  return (
+    window.localStorage.getItem(COMMUNICATION_MODEL_KEY) ||
+    fallbackCommunicationModels[0].id
+  );
+};
 
 const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: BarChart3 },
@@ -746,6 +766,11 @@ function CommunicationCoach() {
   const [microphones, setMicrophones] = useState([]);
   const [selectedMicId, setSelectedMicId] = useState("");
   const [micError, setMicError] = useState("");
+  const [communicationModels, setCommunicationModels] = useState(
+    fallbackCommunicationModels,
+  );
+  const [selectedModel, setSelectedModel] = useState(getStoredCommunicationModel);
+  const [modelError, setModelError] = useState("");
   const [recording, setRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [transcribing, setTranscribing] = useState(false);
@@ -754,6 +779,14 @@ function CommunicationCoach() {
   const streamRef = useRef(null);
   const audioChunksRef = useRef([]);
   const chatEndRef = useRef(null);
+
+  const selectedModelDetails = useMemo(
+    () =>
+      communicationModels.find((modelOption) => modelOption.id === selectedModel) ||
+      communicationModels[0] ||
+      fallbackCommunicationModels[0],
+    [communicationModels, selectedModel],
+  );
 
   const isAudioRecordingSupported = () =>
     typeof window !== "undefined" &&
@@ -1087,6 +1120,54 @@ function CommunicationCoach() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+
+    const loadModels = async () => {
+      try {
+        const payload = await communicationApi.models();
+        const nextModels = Array.isArray(payload.communicationModels)
+          ? payload.communicationModels.filter((modelOption) => modelOption?.id)
+          : fallbackCommunicationModels;
+
+        if (!active) return;
+
+        const usableModels = nextModels.length
+          ? nextModels
+          : fallbackCommunicationModels;
+        const defaultModel =
+          payload.defaultCommunicationModel ||
+          usableModels.find((modelOption) => modelOption.default)?.id ||
+          usableModels[0].id;
+
+        setCommunicationModels(usableModels);
+        setSelectedModel((current) =>
+          usableModels.some((modelOption) => modelOption.id === current)
+            ? current
+            : defaultModel,
+        );
+        setModelError("");
+      } catch (error) {
+        if (!active) return;
+        setModelError(error.message);
+      }
+    };
+
+    loadModels();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !selectedModel) {
+      return;
+    }
+
+    window.localStorage.setItem(COMMUNICATION_MODEL_KEY, selectedModel);
+  }, [selectedModel]);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [chatMessages, loading, questionLoading, transcribing]);
 
@@ -1177,6 +1258,7 @@ function CommunicationCoach() {
       const result = await communicationApi.analyze({
         message: answer,
         topic: activeStarter.topic,
+        model: selectedModel,
       });
 
       setAnalysis(result);
@@ -1259,12 +1341,12 @@ function CommunicationCoach() {
       .filter(Boolean)
       .join("\n\n");
   };
-  const answerStatus = micError || coachError;
+  const answerStatus = micError || coachError || modelError;
   const answerMeta = transcribing
     ? "Transcribing answer..."
     : recording
       ? `Recording ${recordingSeconds}s`
-      : `${message.trim().length} characters`;
+      : `${message.trim().length} characters | ${selectedModelDetails.label}`;
 
   const renderSpeakerButton = (key, text, disabled = false) => (
     <button
@@ -1324,7 +1406,14 @@ function CommunicationCoach() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
             Feedback
           </p>
-          {renderSpeakerButton(item.id, speechText)}
+          <div className="flex items-center gap-2">
+            {result.aiModel ? (
+              <span className="rounded-lg border border-white/10 bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold text-slate-500 dark:text-slate-300">
+                {result.aiModel}
+              </span>
+            ) : null}
+            {renderSpeakerButton(item.id, speechText)}
+          </div>
         </div>
         <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
           {result.feedback}
@@ -1373,15 +1462,41 @@ function CommunicationCoach() {
               Communication Chat
             </h3>
           </div>
-          <button
-            type="button"
-            onClick={() => loadRandomQuestion()}
-            disabled={questionLoading || recording || transcribing}
-            className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {questionLoading ? "Loading..." : "New Question"}
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <label
+              className="inline-flex min-w-0 items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-3 py-3 text-sm font-bold text-white"
+              title={selectedModelDetails.description || selectedModelDetails.label}
+            >
+              <Cpu className="h-4 w-4 shrink-0 text-violet-200" />
+              <span className="sr-only">AI model</span>
+              <select
+                value={selectedModel}
+                onChange={(event) => setSelectedModel(event.target.value)}
+                disabled={loading || recording || transcribing}
+                className="min-w-0 bg-transparent text-sm font-bold text-white outline-none disabled:cursor-not-allowed"
+                aria-label="AI model"
+              >
+                {communicationModels.map((modelOption) => (
+                  <option
+                    key={modelOption.id}
+                    value={modelOption.id}
+                    className="bg-slate-950 text-white"
+                  >
+                    {modelOption.label || modelOption.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() => loadRandomQuestion()}
+              disabled={questionLoading || recording || transcribing}
+              className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {questionLoading ? "Loading..." : "New Question"}
+            </button>
+          </div>
         </div>
       </div>
 

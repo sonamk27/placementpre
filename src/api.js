@@ -62,14 +62,19 @@ export const authApi = {
 
 export const communicationApi = {
   health: () => apiRequest("/api/health"),
+  models: () => apiRequest("/api/communication/models"),
   startTopic: () => apiRequest("/api/communication/start-topic", { method: "POST" }),
   analyze: (payload) =>
     apiRequest("/api/communication/analyze", { method: "POST", body: payload }),
-  transcribe: (audioBlob, { topic } = {}) => {
+  transcribe: (audioBlob, { topic, model } = {}) => {
     const params = new URLSearchParams();
 
     if (topic) {
       params.set("topic", topic);
+    }
+
+    if (model) {
+      params.set("model", model);
     }
 
     const query = params.toString();

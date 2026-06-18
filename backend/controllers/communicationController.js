@@ -11,6 +11,7 @@ import {
 import { getRandomCommunicationStarter } from "../services/dailyGeneratorService.js";
 import {
   analyzeWithCommunicationCoach,
+  getCommunicationModelOptions,
   transcribeCommunicationAudio,
 } from "../services/openaiCommunicationService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -32,6 +33,8 @@ const mapSession = (session) => ({
   recommendations: session.aiRecommendations,
   followUpQuestion: session.followUpQuestion,
   motivationQuote: session.motivationQuote,
+  aiModel: session.aiModel,
+  aiProvider: session.aiProvider,
   createdAt: session.createdAt,
 });
 
@@ -75,6 +78,10 @@ export const startTopic = asyncHandler(async (req, res) => {
   res.json(getRandomCommunicationStarter());
 });
 
+export const getCommunicationModels = asyncHandler(async (req, res) => {
+  res.json(getCommunicationModelOptions());
+});
+
 export const analyzeMessage = asyncHandler(async (req, res) => {
   const databaseConnected = isDatabaseConnected();
   const userId = databaseConnected ? new Types.ObjectId(req.user._id) : null;
@@ -83,6 +90,7 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
   const analysis = await analyzeWithCommunicationCoach({
     message: req.body.message,
     topic,
+    model: req.body.model,
   });
 
   if (!databaseConnected) {
@@ -100,6 +108,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
       recommendations: analysis.recommendations,
       followUpQuestion: analysis.followUpQuestion,
       motivationQuote: analysis.motivationQuote || starter.motivationQuote,
+      aiModel: analysis.model,
+      aiProvider: analysis.provider,
       saved: false,
       coachJson: {
         correctedVersion: analysis.correctedMessage,
@@ -132,6 +142,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
     aiRecommendations: analysis.recommendations,
     followUpQuestion: analysis.followUpQuestion,
     motivationQuote: analysis.motivationQuote || starter.motivationQuote,
+    aiModel: analysis.model,
+    aiProvider: analysis.provider,
   });
 
   await updateDailyProgressForSession(userId, session.createdAt);
@@ -150,6 +162,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
     recommendations: session.aiRecommendations,
     followUpQuestion: session.followUpQuestion,
     motivationQuote: session.motivationQuote,
+    aiModel: session.aiModel,
+    aiProvider: session.aiProvider,
     saved: true,
     coachJson: {
       correctedVersion: session.correctedMessage,
@@ -177,6 +191,7 @@ export const transcribeAnswerAudio = asyncHandler(async (req, res) => {
     audioBuffer: req.body,
     mimeType: req.get("content-type"),
     topic,
+    model: req.query.model,
   });
 
   res.json(result);

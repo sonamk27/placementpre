@@ -287,6 +287,8 @@ export const toHistoryCsv = (sessions) => {
     "improvementTip",
     "aiRecommendations",
     "motivationQuote",
+    "aiModel",
+    "aiProvider",
   ];
 
   const escapeCsv = (value) => {
@@ -310,6 +312,8 @@ export const toHistoryCsv = (sessions) => {
       session.improvementTip,
       session.aiRecommendations?.join("; "),
       session.motivationQuote,
+      session.aiModel,
+      session.aiProvider,
     ]
       .map(escapeCsv)
       .join(","),

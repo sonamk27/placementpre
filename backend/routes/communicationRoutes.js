@@ -4,6 +4,7 @@ import {
   analyzeMessage,
   exportHistory,
   getHistory,
+  getCommunicationModels,
   getMonthlySummaryController,
   getStats,
   getWeeklyReportController,
@@ -17,6 +18,7 @@ import {
   analyzeValidator,
   exportValidator,
   historyValidator,
+  transcribeValidator,
 } from "../validators/communicationValidators.js";
 
 const router = Router();
@@ -30,6 +32,7 @@ const coachLimiter = rateLimit({
 
 router.use(attachCommunicationUser);
 
+router.get("/models", getCommunicationModels);
 router.post("/start-topic", coachLimiter, startTopic);
 router.post(
   "/analyze",
@@ -41,6 +44,8 @@ router.post(
 router.post(
   "/transcribe",
   coachLimiter,
+  transcribeValidator,
+  validateRequest,
   express.raw({ type: ["audio/*", "application/octet-stream"], limit: "12mb" }),
   transcribeAnswerAudio,
 );

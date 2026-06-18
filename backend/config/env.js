@@ -1,4 +1,9 @@
 import dotenv from "dotenv";
+import {
+  DEFAULT_COMMUNICATION_MODEL,
+  DEFAULT_TRANSCRIPTION_MODEL,
+  buildModelRegistry,
+} from "./aiModels.js";
 
 dotenv.config({ quiet: true });
 
@@ -10,6 +15,14 @@ const parseOrigins = (value) =>
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+const modelRegistry = buildModelRegistry({
+  communicationDefault: process.env.OPENAI_MODEL || DEFAULT_COMMUNICATION_MODEL,
+  transcriptionDefault:
+    process.env.OPENAI_TRANSCRIPTION_MODEL || DEFAULT_TRANSCRIPTION_MODEL,
+  extraCommunicationModels: process.env.OPENAI_COMMUNICATION_MODELS,
+  extraTranscriptionModels: process.env.OPENAI_TRANSCRIPTION_MODELS,
+});
 
 if (isProduction) {
   const missing = ["MONGODB_URI", "JWT_SECRET", "OPENAI_API_KEY"].filter(
@@ -33,9 +46,10 @@ export const config = {
   corsOrigins: parseOrigins(process.env.CLIENT_ORIGIN),
   openai: {
     apiKey: process.env.OPENAI_API_KEY,
-    model: process.env.OPENAI_MODEL || "gpt-5.5",
-    transcriptionModel:
-      process.env.OPENAI_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe",
+    model: modelRegistry.communicationDefault,
+    transcriptionModel: modelRegistry.transcriptionDefault,
+    communicationModels: modelRegistry.communicationModels,
+    transcriptionModels: modelRegistry.transcriptionModels,
   },
   allowAiFallback:
     process.env.ALLOW_AI_FALLBACK === "true" ||

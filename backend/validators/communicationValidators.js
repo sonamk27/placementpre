@@ -1,4 +1,8 @@
 import { body, query } from "express-validator";
+import {
+  isSupportedCommunicationModel,
+  isSupportedTranscriptionModel,
+} from "../services/openaiCommunicationService.js";
 
 export const analyzeValidator = [
   body("message")
@@ -10,6 +14,19 @@ export const analyzeValidator = [
     .trim()
     .isLength({ min: 2, max: 240 })
     .withMessage("Topic must be between 2 and 240 characters"),
+  body("model")
+    .optional()
+    .trim()
+    .custom((model) => isSupportedCommunicationModel(model))
+    .withMessage("Unsupported communication AI model"),
+];
+
+export const transcribeValidator = [
+  query("model")
+    .optional()
+    .trim()
+    .custom((model) => isSupportedTranscriptionModel(model))
+    .withMessage("Unsupported transcription AI model"),
 ];
 
 export const historyValidator = [

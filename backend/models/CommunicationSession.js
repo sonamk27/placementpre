@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { DEFAULT_COMMUNICATION_MODEL } from "../config/aiModels.js";
 
 const score = {
   type: Number,
@@ -67,6 +68,18 @@ const communicationSessionSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    aiModel: {
+      type: String,
+      default: DEFAULT_COMMUNICATION_MODEL,
+      trim: true,
+      maxlength: 80,
+    },
+    aiProvider: {
+      type: String,
+      default: "openai",
+      trim: true,
+      maxlength: 40,
     },
   },
   {
