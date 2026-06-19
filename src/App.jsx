@@ -308,6 +308,39 @@ const normalizePlannerItems = (items, fallback, prefix) =>
     completed: Boolean(item.completed),
   }));
 
+const formatTenScore = (value, fallback = 1) => {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return fallback;
+  }
+
+  return Math.max(1, Math.min(10, Math.round(numericValue)));
+};
+
+const getOverallCoachScore = (result) => {
+  const scoreValues = [
+    result?.grammarScore,
+    result?.vocabularyScore,
+    result?.fluencyScore,
+    result?.confidenceScore,
+  ]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+
+  if (Number.isFinite(Number(result?.overallScore))) {
+    return formatTenScore(result.overallScore);
+  }
+
+  if (!scoreValues.length) {
+    return 1;
+  }
+
+  return formatTenScore(
+    scoreValues.reduce((total, value) => total + value, 0) / scoreValues.length,
+  );
+};
+
 function GlassCard({ children, className = "", id }) {
   return (
     <section id={id} className={`glass-card ${className}`}>
@@ -737,7 +770,19 @@ function ProgressDashboard() {
 
 function CommunicationCoach() {
   const defaultStarter = {
-    topic: "Describe a project where you solved a real user problem.",
+    topic:
+      "Explain React Hooks to an interviewer. Cover why hooks are used, one hook you know well, and one project example.",
+    dailyTarget:
+      "Understand React Hooks: state, side effects, and reusable logic in function components. Prepare one interview answer with a definition, one project use, and one result.",
+    dailyTechnology: {
+      name: "React Hooks",
+      focus: "state, side effects, and reusable logic in function components",
+      keyPoints: [
+        "Hooks let function components manage state and side effects.",
+        "useState stores UI state; useEffect runs side-effect logic after render.",
+        "Custom hooks help reuse component logic cleanly.",
+      ],
+    },
     vocabularyWord: {
       word: "impact",
       meaning: "a measurable effect or result",
@@ -1260,15 +1305,20 @@ function CommunicationCoach() {
         topic: activeStarter.topic,
         model: selectedModel,
       });
+      const enrichedResult = {
+        dailyTarget: activeStarter.dailyTarget,
+        dailyTechnology: activeStarter.dailyTechnology,
+        ...result,
+      };
 
-      setAnalysis(result);
+      setAnalysis(enrichedResult);
       setChatMessages((current) => [
         ...current,
         {
           id: createChatId(),
           role: "assistant",
           type: "feedback",
-          analysis: result,
+          analysis: enrichedResult,
         },
       ]);
     } catch (error) {
@@ -1319,24 +1369,38 @@ function CommunicationCoach() {
   };
 
   const getQuestionText = (questionStarter) =>
-    questionStarter?.vocabularyWord
-      ? `${questionStarter.topic} Word of the day: ${questionStarter.vocabularyWord.word}. ${questionStarter.vocabularyWord.example}`
-      : questionStarter?.topic || "";
+    [
+      questionStarter?.dailyTechnology?.name
+        ? `Today's technology: ${questionStarter.dailyTechnology.name}.`
+        : "",
+      questionStarter?.dailyTarget ? `Daily target: ${questionStarter.dailyTarget}` : "",
+      questionStarter?.topic || "",
+      Array.isArray(questionStarter?.dailyTechnology?.keyPoints)
+        ? `Key points: ${questionStarter.dailyTechnology.keyPoints.join(" ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
   const getCoachResponse = (result) => {
     if (!result) return "";
 
+    const overallScore = getOverallCoachScore(result);
     const vocabularySuggestions =
       result.betterVocabularySuggestions?.filter(Boolean).join(", ") || "";
     const mistakes = result.mistakes?.filter(Boolean).join(" ") || "";
 
     return [
+      `Overall score: ${overallScore} out of 10.`,
+      result.betterInterviewAnswer
+        ? `Better interview answer: ${result.betterInterviewAnswer}`
+        : "",
       `Corrected answer: ${result.correctedMessage}`,
       `Feedback: ${result.feedback}`,
       mistakes ? `Grammar notes: ${mistakes}` : "",
       vocabularySuggestions ? `Better vocabulary: ${vocabularySuggestions}` : "",
       result.improvementTip ? `Tip: ${result.improvementTip}` : "",
       result.followUpQuestion ? `Follow-up question: ${result.followUpQuestion}` : "",
-      `Scores: Grammar ${result.grammarScore}/10, Vocabulary ${result.vocabularyScore}/10, Fluency ${result.fluencyScore}/10, Confidence ${result.confidenceScore}/10.`,
+      `Scores: Grammar ${formatTenScore(result.grammarScore)}/10, Vocabulary ${formatTenScore(result.vocabularyScore)}/10, Fluency ${formatTenScore(result.fluencyScore)}/10, Confidence ${formatTenScore(result.confidenceScore)}/10.`,
     ]
       .filter(Boolean)
       .join("\n\n");
@@ -1368,23 +1432,53 @@ function CommunicationCoach() {
   const renderQuestionBubble = (item) => {
     const questionStarter = item.starter || starter;
     const speechText = getQuestionText(questionStarter);
+    const dailyTechnology = questionStarter.dailyTechnology;
+    const keyPoints = Array.isArray(dailyTechnology?.keyPoints)
+      ? dailyTechnology.keyPoints
+      : [];
 
     return (
       <>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
-            Coach
-          </p>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-200">
+              Today's Technology
+            </p>
+            <p className="mt-1 truncate text-lg font-black text-slate-950 dark:text-white">
+              {dailyTechnology?.name || "Technology Interview Practice"}
+            </p>
+          </div>
           {renderSpeakerButton(item.id, speechText)}
         </div>
-        <p className="text-base font-semibold leading-7 text-slate-950 dark:text-white">
+        {dailyTechnology?.focus ? (
+          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
+            {dailyTechnology.focus}
+          </p>
+        ) : null}
+        {questionStarter.dailyTarget ? (
+          <div className="mt-4 rounded-lg border border-emerald-300/20 bg-emerald-400/[0.12] p-3">
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">
+              Daily Target
+            </p>
+            <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-100">
+              {questionStarter.dailyTarget}
+            </p>
+          </div>
+        ) : null}
+        <p className="mt-4 text-base font-semibold leading-7 text-slate-950 dark:text-white">
           {questionStarter.topic}
         </p>
-        {questionStarter.vocabularyWord ? (
-          <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Word of the day: {questionStarter.vocabularyWord.word} -{" "}
-            {questionStarter.vocabularyWord.example}
-          </p>
+        {keyPoints.length ? (
+          <div className="mt-4 grid gap-2">
+            {keyPoints.map((point) => (
+              <div
+                key={point}
+                className="rounded-lg border border-white/10 bg-white/[0.08] px-3 py-2 text-xs leading-5 text-slate-600 dark:text-slate-300"
+              >
+                {point}
+              </div>
+            ))}
+          </div>
         ) : null}
       </>
     );
@@ -1393,19 +1487,44 @@ function CommunicationCoach() {
   const renderFeedbackBubble = (item) => {
     const result = item.analysis;
     const speechText = getCoachResponse(result);
+    const overallScore = getOverallCoachScore(result);
     const scores = [
-      ["Grammar", result.grammarScore],
-      ["Vocabulary", result.vocabularyScore],
-      ["Fluency", result.fluencyScore],
-      ["Confidence", result.confidenceScore],
+      ["Grammar", formatTenScore(result.grammarScore)],
+      ["Vocabulary", formatTenScore(result.vocabularyScore)],
+      ["Fluency", formatTenScore(result.fluencyScore)],
+      ["Confidence", formatTenScore(result.confidenceScore)],
+    ];
+    const improvementGroups = [
+      ["Mistakes", result.mistakes],
+      ["Better Words", result.betterVocabularySuggestions],
+      ["Practice", result.recommendations],
+    ]
+      .map(([label, items]) => [
+        label,
+        Array.isArray(items) ? items.filter(Boolean) : [],
+      ])
+      .filter(([, items]) => items.length);
+
+    const betterInterviewAnswer =
+      result.betterInterviewAnswer || result.correctedMessage || "";
+    const dailyTechnologyName = result.dailyTechnology?.name;
+
+    const answerBlocks = [
+      ["Better Interview Answer", betterInterviewAnswer],
+      ["Corrected Answer", result.correctedMessage],
     ];
 
     return (
       <>
         <div className="mb-3 flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
-            Feedback
-          </p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-violet-700 dark:text-violet-200">
+              Feedback
+            </p>
+            <p className="mt-1 text-3xl font-black text-slate-950 dark:text-white">
+              {overallScore}/10
+            </p>
+          </div>
           <div className="flex items-center gap-2">
             {result.aiModel ? (
               <span className="rounded-lg border border-white/10 bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold text-slate-500 dark:text-slate-300">
@@ -1415,17 +1534,34 @@ function CommunicationCoach() {
             {renderSpeakerButton(item.id, speechText)}
           </div>
         </div>
+        {dailyTechnologyName ? (
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">
+            {dailyTechnologyName}
+          </p>
+        ) : null}
         <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
           {result.feedback}
         </p>
-        <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.08] p-3">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">
-            Corrected Answer
+        {result.dailyTarget ? (
+          <p className="mt-3 rounded-lg border border-emerald-300/20 bg-emerald-400/[0.12] p-3 text-sm leading-6 text-slate-700 dark:text-slate-100">
+            Target: {result.dailyTarget}
           </p>
-          <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-100">
-            {result.correctedMessage}
-          </p>
-        </div>
+        ) : null}
+        {answerBlocks.map(([title, text]) =>
+          text ? (
+            <div
+              key={title}
+              className="mt-4 rounded-lg border border-white/10 bg-white/[0.08] p-3"
+            >
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">
+                {title}
+              </p>
+              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700 dark:text-slate-100">
+                {text}
+              </p>
+            </div>
+          ) : null,
+        )}
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {scores.map(([label, value]) => (
             <div
@@ -1439,6 +1575,30 @@ function CommunicationCoach() {
             </div>
           ))}
         </div>
+        {improvementGroups.length ? (
+          <div className="mt-4 grid gap-2 md:grid-cols-3">
+            {improvementGroups.map(([label, items]) => (
+              <div
+                key={label}
+                className="rounded-lg border border-white/10 bg-white/[0.08] p-3"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-300">
+                  {label}
+                </p>
+                <div className="mt-2 space-y-2">
+                  {items.slice(0, 3).map((entry) => (
+                    <p
+                      key={entry}
+                      className="text-xs leading-5 text-slate-600 dark:text-slate-300"
+                    >
+                      {entry}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {result.improvementTip ? (
           <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Tip: {result.improvementTip}
@@ -1494,7 +1654,7 @@ function CommunicationCoach() {
               className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Plus className="mr-2 h-4 w-4" />
-              {questionLoading ? "Loading..." : "New Question"}
+              {questionLoading ? "Loading..." : "Next Tech Question"}
             </button>
           </div>
         </div>
@@ -1606,7 +1766,7 @@ function CommunicationCoach() {
                 className="inline-flex items-center justify-center rounded-lg border border-violet-300/30 bg-violet-500/[0.12] px-4 py-2 text-sm font-bold text-violet-700 transition hover:bg-violet-500/[0.18] disabled:cursor-not-allowed disabled:opacity-60 dark:text-violet-100"
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Next Random Question
+                Next Tech Question
               </button>
             ) : null}
           </div>

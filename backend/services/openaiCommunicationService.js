@@ -11,6 +11,8 @@ const CoachAnalysisSchema = z.object({
   vocabularyScore: z.number().int().min(1).max(10),
   fluencyScore: z.number().int().min(1).max(10),
   confidenceScore: z.number().int().min(1).max(10),
+  overallScore: z.number().int().min(1).max(10),
+  betterInterviewAnswer: z.string().min(1),
   mistakes: z.array(z.string().min(1)).min(1).max(6),
   betterVocabularySuggestions: z.array(z.string().min(1)).min(1).max(6),
   improvementTip: z.string().min(1),
@@ -23,21 +25,26 @@ const CoachAnalysisSchema = z.object({
 const instructions = `
 You are an expert English Communication Coach.
 Analyze the learner's message and return JSON with:
-1. correctedMessage: the corrected version
-2. grammarScore: 1-10
-3. vocabularyScore: 1-10
-4. fluencyScore: 1-10
-5. confidenceScore: 1-10
-6. mistakes: clear mistakes found in the original message
-7. betterVocabularySuggestions: stronger vocabulary or phrase replacements
-8. improvementTip: exactly one practical improvement tip
-9. followUpQuestion: exactly one natural follow-up question
-10. motivationQuote: exactly one short motivational quote
+1. correctedMessage: the grammar-corrected version of the learner's answer
+2. grammarScore: integer 1-10 only
+3. vocabularyScore: integer 1-10 only
+4. fluencyScore: integer 1-10 only
+5. confidenceScore: integer 1-10 only
+6. overallScore: one final interview-answer score, integer 1-10 only
+7. betterInterviewAnswer: a polished interview-ready answer based on the learner's answer and the daily topic
+8. mistakes: clear mistakes found in the original message
+9. betterVocabularySuggestions: stronger vocabulary or phrase replacements
+10. improvementTip: exactly one practical improvement tip
+11. followUpQuestion: exactly one natural follow-up question
+12. motivationQuote: exactly one short motivational quote
 
 Also include:
 - feedback: a concise explanation of the main issues and strengths
 - recommendations: short actionable recommendations for practice
 
+Score every answer strictly out of 10, never as a percentage.
+The correctedMessage should preserve the learner's meaning.
+The betterInterviewAnswer should sound natural in a placement interview, use first person, and include a clear point, example, and result when possible.
 Keep the tone specific, supportive, and useful for a student preparing for jobs.
 `;
 
@@ -133,10 +140,17 @@ const localFallbackAnalysis = (message, topic) => {
   const confidenceScore = clampScore(
     5 + Number(wordCount > 35) + Number(hasActionVerb) + Number(hasOutcome),
   );
+  const overallScore = clampScore(
+    (grammarScore + vocabularyScore + fluencyScore + confidenceScore) / 4,
+  );
 
   const correctedMessage = `${trimmed.charAt(0).toUpperCase()}${trimmed.slice(1)}${
     hasPunctuation ? "" : "."
   }`;
+  const betterInterviewAnswer =
+    wordCount >= 20
+      ? `${correctedMessage} To make this stronger in an interview, I would add the exact situation, the action I personally took, and the result or learning. This shows that I can explain my work clearly and connect technology decisions to practical impact.`
+      : `I would answer this by first explaining the concept in simple words, then connecting it to one project feature I built or improved. I would mention the problem, the technology or approach I used, my exact contribution, and the result for users, performance, or learning. This makes the answer clear, structured, and interview-ready.`;
   const missingPoints = [
     wordCount < 25 ? "Expand the answer with one concrete example." : "",
     hasActionVerb ? "" : "Use a clear action verb such as built, implemented, debugged, or improved.",
@@ -151,6 +165,8 @@ const localFallbackAnalysis = (message, topic) => {
     vocabularyScore,
     fluencyScore,
     confidenceScore,
+    overallScore,
+    betterInterviewAnswer,
     mistakes:
       missingPoints.length > 0
         ? missingPoints.slice(0, 4)

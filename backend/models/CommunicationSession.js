@@ -37,6 +37,12 @@ const communicationSessionSchema = new mongoose.Schema(
     vocabularyScore: score,
     fluencyScore: score,
     confidenceScore: score,
+    overallScore: score,
+    betterInterviewAnswer: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     aiFeedback: {
       type: String,
       required: true,

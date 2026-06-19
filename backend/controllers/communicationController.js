@@ -26,6 +26,8 @@ const mapSession = (session) => ({
   vocabularyScore: session.vocabularyScore,
   fluencyScore: session.fluencyScore,
   confidenceScore: session.confidenceScore,
+  overallScore: session.overallScore,
+  betterInterviewAnswer: session.betterInterviewAnswer || "",
   feedback: session.aiFeedback,
   mistakes: session.mistakes || [],
   betterVocabularySuggestions: session.betterVocabularySuggestions || [],
@@ -75,7 +77,7 @@ const emptyStats = () => {
 };
 
 export const startTopic = asyncHandler(async (req, res) => {
-  res.json(getRandomCommunicationStarter());
+  res.json(getRandomCommunicationStarter(req.user?._id));
 });
 
 export const getCommunicationModels = asyncHandler(async (req, res) => {
@@ -85,7 +87,7 @@ export const getCommunicationModels = asyncHandler(async (req, res) => {
 export const analyzeMessage = asyncHandler(async (req, res) => {
   const databaseConnected = isDatabaseConnected();
   const userId = databaseConnected ? new Types.ObjectId(req.user._id) : null;
-  const starter = getRandomCommunicationStarter();
+  const starter = getRandomCommunicationStarter(req.user?._id);
   const topic = req.body.topic || starter.topic;
   const analysis = await analyzeWithCommunicationCoach({
     message: req.body.message,
@@ -101,6 +103,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
       vocabularyScore: analysis.vocabularyScore,
       fluencyScore: analysis.fluencyScore,
       confidenceScore: analysis.confidenceScore,
+      overallScore: analysis.overallScore,
+      betterInterviewAnswer: analysis.betterInterviewAnswer,
       feedback: analysis.feedback,
       mistakes: analysis.mistakes,
       betterVocabularySuggestions: analysis.betterVocabularySuggestions,
@@ -108,6 +112,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
       recommendations: analysis.recommendations,
       followUpQuestion: analysis.followUpQuestion,
       motivationQuote: analysis.motivationQuote || starter.motivationQuote,
+      dailyTarget: starter.dailyTarget,
+      dailyTechnology: starter.dailyTechnology,
       aiModel: analysis.model,
       aiProvider: analysis.provider,
       saved: false,
@@ -117,6 +123,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
         vocabularyScore: analysis.vocabularyScore,
         fluencyScore: analysis.fluencyScore,
         confidenceScore: analysis.confidenceScore,
+        overallScore: analysis.overallScore,
+        betterInterviewAnswer: analysis.betterInterviewAnswer,
         mistakes: analysis.mistakes,
         betterVocabularySuggestions: analysis.betterVocabularySuggestions,
         improvementTip: analysis.improvementTip,
@@ -135,6 +143,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
     vocabularyScore: analysis.vocabularyScore,
     fluencyScore: analysis.fluencyScore,
     confidenceScore: analysis.confidenceScore,
+    overallScore: analysis.overallScore,
+    betterInterviewAnswer: analysis.betterInterviewAnswer,
     aiFeedback: analysis.feedback,
     mistakes: analysis.mistakes,
     betterVocabularySuggestions: analysis.betterVocabularySuggestions,
@@ -155,6 +165,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
     vocabularyScore: session.vocabularyScore,
     fluencyScore: session.fluencyScore,
     confidenceScore: session.confidenceScore,
+    overallScore: session.overallScore,
+    betterInterviewAnswer: session.betterInterviewAnswer,
     feedback: session.aiFeedback,
     mistakes: session.mistakes,
     betterVocabularySuggestions: session.betterVocabularySuggestions,
@@ -162,6 +174,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
     recommendations: session.aiRecommendations,
     followUpQuestion: session.followUpQuestion,
     motivationQuote: session.motivationQuote,
+    dailyTarget: starter.dailyTarget,
+    dailyTechnology: starter.dailyTechnology,
     aiModel: session.aiModel,
     aiProvider: session.aiProvider,
     saved: true,
@@ -171,6 +185,8 @@ export const analyzeMessage = asyncHandler(async (req, res) => {
       vocabularyScore: session.vocabularyScore,
       fluencyScore: session.fluencyScore,
       confidenceScore: session.confidenceScore,
+      overallScore: session.overallScore,
+      betterInterviewAnswer: session.betterInterviewAnswer,
       mistakes: session.mistakes,
       betterVocabularySuggestions: session.betterVocabularySuggestions,
       improvementTip: session.improvementTip,

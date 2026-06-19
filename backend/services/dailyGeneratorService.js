@@ -13,6 +13,121 @@ const topics = [
   "Explain your strongest project as if this is the final HR round. Cover purpose, tech stack, challenges, and impact.",
 ];
 
+const technologyTopics = [
+  {
+    name: "React Hooks",
+    focus: "state, side effects, and reusable logic in function components",
+    prompts: [
+      "Explain React Hooks to an interviewer. Cover why hooks are used, one hook you know well, and one project example.",
+      "Describe a project feature where React Hooks helped you manage UI state or side effects.",
+      "What is the difference between useState and useEffect? Explain it with a practical example.",
+    ],
+    keyPoints: [
+      "Hooks let function components manage state and side effects.",
+      "useState stores UI state; useEffect runs side-effect logic after render.",
+      "Custom hooks help reuse component logic cleanly.",
+    ],
+  },
+  {
+    name: "REST API",
+    focus: "client-server communication using resources, HTTP methods, and status codes",
+    prompts: [
+      "Explain REST API to an interviewer. Include resources, HTTP methods, and one API you built or consumed.",
+      "Describe how your frontend talks to a backend API in a MERN project.",
+      "How would you design a simple REST endpoint for job applications? Mention method, route, request, and response.",
+    ],
+    keyPoints: [
+      "REST organizes data as resources such as users, jobs, or applications.",
+      "GET, POST, PATCH, and DELETE describe the action on a resource.",
+      "Status codes and validation make APIs predictable for the frontend.",
+    ],
+  },
+  {
+    name: "JWT Authentication",
+    focus: "secure login sessions using signed tokens and protected routes",
+    prompts: [
+      "Explain JWT authentication for a placement interview. Cover login, token storage, and protected APIs.",
+      "Describe how you would protect a dashboard route after login.",
+      "What are common JWT security precautions in a full-stack app?",
+    ],
+    keyPoints: [
+      "A JWT is signed by the server after successful login.",
+      "Protected APIs verify the token before returning private data.",
+      "Tokens should expire and should not expose sensitive information.",
+    ],
+  },
+  {
+    name: "MongoDB Schema Design",
+    focus: "documents, fields, validation, indexes, and relationships",
+    prompts: [
+      "Explain how you design a MongoDB schema for a MERN project.",
+      "Describe one MongoDB collection from your project and why you chose those fields.",
+      "When would you embed data in MongoDB and when would you reference another document?",
+    ],
+    keyPoints: [
+      "Documents store related data together in flexible JSON-like records.",
+      "Validation keeps data consistent before it reaches business logic.",
+      "Indexes speed up common queries but should be chosen carefully.",
+    ],
+  },
+  {
+    name: "Express Middleware",
+    focus: "request processing, validation, authentication, logging, and error handling",
+    prompts: [
+      "Explain Express middleware to an interviewer with one real example.",
+      "Describe the request flow in an Express API from route to controller.",
+      "How would you use middleware for validation and authentication in a placement project?",
+    ],
+    keyPoints: [
+      "Middleware runs between the request and the final route handler.",
+      "It is useful for auth, validation, logging, parsing, and errors.",
+      "Reusable middleware keeps controllers smaller and cleaner.",
+    ],
+  },
+  {
+    name: "JavaScript Promises",
+    focus: "asynchronous code, async/await, error handling, and API calls",
+    prompts: [
+      "Explain JavaScript Promises in a simple interview answer.",
+      "Describe how async/await improves API call code in a React or Node app.",
+      "How do you handle errors when a Promise-based API request fails?",
+    ],
+    keyPoints: [
+      "A Promise represents a future success or failure result.",
+      "async/await makes asynchronous code read more like synchronous code.",
+      "try/catch handles errors cleanly around awaited operations.",
+    ],
+  },
+  {
+    name: "SQL Joins",
+    focus: "combining rows from related tables using keys",
+    prompts: [
+      "Explain SQL joins to an interviewer using a students and applications example.",
+      "What is the difference between INNER JOIN and LEFT JOIN?",
+      "Describe a query where joins helped you answer a real data question.",
+    ],
+    keyPoints: [
+      "Joins combine related rows from multiple tables.",
+      "INNER JOIN returns matching rows; LEFT JOIN keeps all rows from the left table.",
+      "Indexes on join keys can improve query performance.",
+    ],
+  },
+  {
+    name: "Git Branching",
+    focus: "feature branches, commits, pull requests, and safe collaboration",
+    prompts: [
+      "Explain your Git workflow in a project interview.",
+      "Describe why teams use branches and pull requests.",
+      "How do you handle a merge conflict in a calm, practical way?",
+    ],
+    keyPoints: [
+      "Branches isolate feature work from stable code.",
+      "Small commits make review and rollback easier.",
+      "Pull requests help teams discuss and verify changes before merging.",
+    ],
+  },
+];
+
 const vocabulary = [
   {
     word: "impact",
@@ -93,21 +208,57 @@ const pickRandomExcept = (items, previous) => {
   return next;
 };
 
-export const getDailyCommunicationStarter = (userId, date = new Date()) => ({
-  date: dateKey(date),
-  topic: pickDaily(topics, userId, date, "topic"),
-  vocabularyWord: pickDaily(vocabulary, userId, date, "vocabulary"),
-  motivationQuote: pickDaily(quotes, userId, date, "quote"),
+const buildDailyTarget = (technology) =>
+  `Understand ${technology.name}: ${technology.focus}. Prepare one interview answer with a definition, one project use, and one result.`;
+
+const serializeTechnology = (technology) => ({
+  name: technology.name,
+  focus: technology.focus,
+  keyPoints: technology.keyPoints,
 });
 
-export const getRandomCommunicationStarter = () => {
-  const topic = pickRandomExcept(topics, lastRandomTopic);
+const buildCommunicationStarter = ({
+  technology,
+  topic,
+  userId = "guest",
+  date = new Date(),
+  daily = false,
+}) => ({
+  date: dateKey(date),
+  topic,
+  dailyTarget: buildDailyTarget(technology),
+  dailyTechnology: serializeTechnology(technology),
+  vocabularyWord: daily
+    ? pickDaily(vocabulary, userId, date, "vocabulary")
+    : pickRandom(vocabulary),
+  motivationQuote: daily ? pickDaily(quotes, userId, date, "quote") : pickRandom(quotes),
+});
+
+export const getDailyCommunicationStarter = (userId, date = new Date()) => ({
+  ...buildCommunicationStarter({
+    technology: pickDaily(technologyTopics, userId, date, "technology"),
+    topic: pickDaily(
+      pickDaily(technologyTopics, userId, date, "technology").prompts,
+      userId,
+      date,
+      "technology-prompt",
+    ),
+    userId,
+    date,
+    daily: true,
+  }),
+});
+
+export const getRandomCommunicationStarter = (userId = "guest", date = new Date()) => {
+  const technology = pickDaily(technologyTopics, userId, date, "technology");
+  const topic = pickRandomExcept(technology.prompts, lastRandomTopic);
+
   lastRandomTopic = topic;
 
-  return {
-    date: dateKey(),
+  return buildCommunicationStarter({
+    technology,
     topic,
-    vocabularyWord: pickRandom(vocabulary),
-    motivationQuote: pickRandom(quotes),
-  };
+    userId,
+    date,
+  });
 };
