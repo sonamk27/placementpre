@@ -95,6 +95,12 @@ export const communicationApi = {
     apiRequest(`/api/communication/export?format=${format}`),
 };
 
+export const dsaApi = {
+  today: () => apiRequest("/api/dsa/today"),
+  completeToday: () =>
+    apiRequest("/api/dsa/today/complete", { method: "POST" }),
+};
+
 export const plannerApi = {
   today: () => apiRequest("/api/planner/today"),
   addTask: (payload) =>

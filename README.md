@@ -42,3 +42,5 @@ Key endpoints:
 - `GET /api/communication/report/weekly`
 - `GET /api/communication/summary/monthly`
 - `GET /api/communication/export?format=json|csv`
+- `GET /api/dsa/today`
+- `POST /api/dsa/today/complete`

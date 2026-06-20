@@ -8,6 +8,7 @@ import { config } from "./config/env.js";
 import { errorHandler, notFound } from "./middleware/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
 import communicationRoutes from "./routes/communicationRoutes.js";
+import dsaPracticeRoutes from "./routes/dsaPracticeRoutes.js";
 import plannerRoutes from "./routes/plannerRoutes.js";
 
 const app = express();
@@ -64,6 +65,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/communication", communicationRoutes);
+app.use("/api/dsa", dsaPracticeRoutes);
 app.use("/api/planner", plannerRoutes);
 
 app.use(notFound);
