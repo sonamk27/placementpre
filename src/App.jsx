@@ -75,7 +75,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { communicationApi, plannerApi } from "./api";
+import { communicationApi, dsaApi, plannerApi } from "./api";
 
 ChartJS.register(
   CategoryScale,
@@ -110,6 +110,124 @@ const getStoredCommunicationModel = () => {
     window.localStorage.getItem(COMMUNICATION_MODEL_KEY) ||
     fallbackCommunicationModels[0].id
   );
+};
+
+const DSA_LOCAL_ACTIVITY_KEY = "prepmate_dsa_practice_activity";
+
+const toLocalDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const addDaysToDateKey = (value, days) => {
+  const [year, month, day] = String(value).split("-").map(Number);
+  const date = new Date(year, month - 1, day || 1);
+
+  date.setDate(date.getDate() + days);
+
+  return toLocalDateKey(date);
+};
+
+const getLocalDsaActivityDates = () => {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  try {
+    const stored = JSON.parse(window.localStorage.getItem(DSA_LOCAL_ACTIVITY_KEY));
+
+    return Array.isArray(stored)
+      ? stored.filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item))
+      : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveLocalDsaActivityDates = (dates) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const uniqueDates = [...new Set(dates)].sort();
+  window.localStorage.setItem(DSA_LOCAL_ACTIVITY_KEY, JSON.stringify(uniqueDates));
+};
+
+const getCurrentDsaStreakFromKeys = (dateKeys, dateKey = toLocalDateKey()) => {
+  const activeDays = new Set(dateKeys);
+  let cursor = activeDays.has(dateKey) ? dateKey : addDaysToDateKey(dateKey, -1);
+  let streak = 0;
+
+  while (activeDays.has(cursor)) {
+    streak += 1;
+    cursor = addDaysToDateKey(cursor, -1);
+  }
+
+  return streak;
+};
+
+const getBestDsaStreakFromKeys = (dateKeys) => {
+  const sortedDates = [...new Set(dateKeys)].sort();
+  let best = 0;
+  let current = 0;
+  let previous = null;
+
+  for (const date of sortedDates) {
+    current = previous && addDaysToDateKey(previous, 1) === date ? current + 1 : 1;
+    best = Math.max(best, current);
+    previous = date;
+  }
+
+  return best;
+};
+
+const buildLocalDsaActivity = (dateKey = toLocalDateKey()) =>
+  Array.from({ length: 28 }, (_, index) => ({
+    date: addDaysToDateKey(dateKey, index - 27),
+    completed: false,
+  }));
+
+const mergeLocalDsaPractice = (payload) => {
+  if (!payload || payload.saved !== false) {
+    return payload;
+  }
+
+  const date = payload.date || toLocalDateKey();
+  const dateKeys = payload.completedToday
+    ? [...getLocalDsaActivityDates(), date]
+    : getLocalDsaActivityDates();
+  const activeDays = new Set(dateKeys);
+  const weeklyActivity = Array.isArray(payload.weeklyActivity)
+    ? payload.weeklyActivity
+    : buildLocalDsaActivity(date);
+
+  return {
+    ...payload,
+    date,
+    completedToday: activeDays.has(date),
+    currentStreak: getCurrentDsaStreakFromKeys([...activeDays], date),
+    bestStreak: getBestDsaStreakFromKeys([...activeDays]),
+    totalSolved: activeDays.size,
+    weeklyActivity: weeklyActivity.map((day) => ({
+      ...day,
+      completed: activeDays.has(day.date),
+    })),
+  };
+};
+
+const rememberLocalDsaPractice = (payload) => {
+  const date = payload?.date || toLocalDateKey();
+  saveLocalDsaActivityDates([...getLocalDsaActivityDates(), date]);
+
+  return mergeLocalDsaPractice({
+    ...payload,
+    date,
+    completedToday: true,
+    saved: false,
+  });
 };
 
 const navItems = [
@@ -1776,72 +1894,24 @@ function CommunicationCoach() {
   );
 }
 
-function DsaHub() {
+function DsaHub({
+  practice,
+  loading = false,
+  completingPractice = false,
+  onCompletePractice,
+  status = "",
+}) {
   const [difficulty, setDifficulty] = useState("Medium");
-  const problem = dsaProblems[difficulty];
-
-  return (
-    <GlassCard id="dsa" className="p-5 sm:p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <IconBadge icon={Code2} className="mb-4 text-violet-200" />
-          <h3 className="text-2xl font-bold">DSA Practice Hub</h3>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-            LeetCode-style daily questions with AI hints, solutions, time
-            complexity, and progress tracking.
-          </p>
-        </div>
-        <div className="flex rounded-lg border border-white/10 bg-white/[0.08] p-1">
-          {["Easy", "Medium", "Hard"].map((item) => (
-            <button
-              key={item}
-              onClick={() => setDifficulty(item)}
-              className={`rounded-md px-4 py-2 text-sm font-bold transition ${
-                difficulty === item
-                  ? "bg-white text-slate-950"
-                  : "text-slate-500 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
-              }`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="mt-6 flex flex-wrap gap-2">
-        {dsaTopics.map((topic) => (
-          <span
-            key={topic}
-            className="rounded-full border border-white/10 bg-white/[0.08] px-4 py-2 text-sm font-semibold"
-          >
-            {topic}
-          </span>
-        ))}
-      </div>
-      <div className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="rounded-lg border border-white/10 bg-slate-950 p-5 text-white">
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-violet-200">Daily DSA Question</p>
-            <span className="rounded-full bg-violet-500/25 px-3 py-1 text-xs font-bold">
-              {difficulty}
-            </span>
-          </div>
-          <h4 className="text-xl font-black">{problem.title}</h4>
-          <p className="mt-3 text-sm leading-6 text-slate-300">{problem.prompt}</p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {[
-              ["AI Hint", "Use a sliding window and track latest indices."],
-              ["AI Solution", "Update left pointer only when repeat is inside window."],
-              ["Time Complexity", problem.time],
-            ].map(([title, text]) => (
-              <div key={title} className="rounded-lg bg-white/10 p-4">
-                <p className="text-sm font-bold">{title}</p>
-                <p className="mt-2 text-xs leading-5 text-slate-300">{text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        <CodeEditor title="solution.js">
-{`function solve(input) {
+  const problem = practice?.question || dsaProblems[difficulty];
+  const activeDifficulty = problem?.difficulty || difficulty;
+  const selectedDifficulty = practice?.question ? activeDifficulty : difficulty;
+  const hintText =
+    problem?.hints?.[0] || "Break the problem into state, transition, and edge cases.";
+  const approachText =
+    problem?.approach || "Write the brute-force idea first, then tighten the data structure.";
+  const solutionText =
+    problem?.solution ||
+    `function solve(input) {
   const seen = new Map();
   let left = 0;
   let best = 0;
@@ -1856,14 +1926,106 @@ function DsaHub() {
   }
 
   return best;
-}`}
-        </CodeEditor>
+}`;
+
+  return (
+    <GlassCard id="dsa" className="p-5 sm:p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <IconBadge icon={Code2} className="mb-4 text-violet-200" />
+          <h3 className="text-2xl font-bold">DSA Practice Hub</h3>
+          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+            LeetCode-style daily questions with AI hints, solutions, time
+            complexity, and progress tracking.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex rounded-lg border border-white/10 bg-white/[0.08] p-1">
+            {["Easy", "Medium", "Hard"].map((item) => (
+              <button
+                key={item}
+                onClick={() => setDifficulty(item)}
+                className={`rounded-md px-4 py-2 text-sm font-bold transition ${
+                  selectedDifficulty === item
+                    ? "bg-white text-slate-950"
+                    : "text-slate-500 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white"
+                }`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onCompletePractice}
+            disabled={loading || completingPractice || practice?.completedToday}
+            className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${
+              practice?.completedToday
+                ? "bg-emerald-500"
+                : "bg-emerald-600 hover:bg-emerald-500"
+            }`}
+          >
+            <ClipboardCheck className="mr-2 h-4 w-4" />
+            {practice?.completedToday
+              ? "Practiced Today"
+              : completingPractice
+                ? "Saving..."
+                : "Mark Practiced"}
+          </button>
+        </div>
+      </div>
+      {status ? (
+        <div className="mt-4 rounded-lg border border-rose-300/20 bg-rose-500/[0.08] p-3 text-sm font-semibold text-rose-600 dark:text-rose-100">
+          {status}
+        </div>
+      ) : null}
+      {loading ? (
+        <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.08] p-3 text-sm font-semibold text-slate-500 dark:text-slate-300">
+          Loading today's DSA practice...
+        </div>
+      ) : null}
+      {!practice?.question ? (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {dsaTopics.map((topic) => (
+            <span
+              key={topic}
+              className="rounded-full border border-white/10 bg-white/[0.08] px-4 py-2 text-sm font-semibold"
+            >
+              {topic}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <div className="mt-6 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="rounded-lg border border-white/10 bg-slate-950 p-5 text-white">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <p className="text-sm text-violet-200">Daily DSA Question</p>
+            <span className="rounded-full bg-violet-500/25 px-3 py-1 text-xs font-bold">
+              {activeDifficulty}
+            </span>
+          </div>
+          <h4 className="text-xl font-black">{problem.title}</h4>
+          <p className="mt-3 text-sm leading-6 text-slate-300">{problem.prompt}</p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {[
+              ["Hint", hintText],
+              ["Approach", approachText],
+              ["Time Complexity", problem.time],
+            ].map(([title, text]) => (
+              <div key={title} className="rounded-lg bg-white/10 p-4">
+                <p className="text-sm font-bold">{title}</p>
+                <p className="mt-2 text-xs leading-5 text-slate-300">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <CodeEditor title="solution.js">{solutionText}</CodeEditor>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         {[
-          ["Acceptance", problem.acceptance],
-          ["Runtime Beat", "91%"],
-          ["Topic Progress", "68%"],
+          ["Acceptance", problem.acceptance || "Practice"],
+          ["Today", practice?.completedToday ? "Done" : "Pending"],
+          ["Current Streak", `${practice?.currentStreak || 0} days`],
         ].map(([label, value]) => (
           <div key={label} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
             <p className="text-sm text-slate-500 dark:text-slate-400">{label}</p>
@@ -2439,9 +2601,38 @@ function CompanyAndGithub() {
   );
 }
 
-function LeetCodeTracker({ theme }) {
+function LeetCodeTracker({ theme, practice, loading = false }) {
   const textColor = theme === "dark" ? "#CBD5E1" : "#334155";
   const gridColor = theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.08)";
+  const activityDays = useMemo(() => {
+    if (practice?.weeklyActivity?.length) {
+      return practice.weeklyActivity;
+    }
+
+    const today = new Date();
+
+    return Array.from({ length: 28 }, (_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() + index - 27);
+
+      return {
+        date: date.toISOString().slice(0, 10),
+        completed: false,
+      };
+    });
+  }, [practice?.weeklyActivity]);
+  const formatActivityDate = (value) => {
+    const [year, month, day] = String(value).split("-").map(Number);
+
+    if (!year || !month || !day) {
+      return "Practice day";
+    }
+
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+    }).format(new Date(year, month - 1, day));
+  };
 
   const chartOptions = useMemo(
     () => ({
@@ -2465,15 +2656,15 @@ function LeetCodeTracker({ theme }) {
           <IconBadge icon={LineChart} className="mb-4 text-emerald-200" />
           <h3 className="text-2xl font-bold">LeetCode Progress Tracker</h3>
           <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-            Problems solved, difficulty counts, streak calendar, topic coverage,
-            and accuracy graph.
+            Practice streak, GitHub-style activity calendar, topic coverage, and
+            accuracy graph.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 text-center">
           {[
-            ["Easy", 118, "text-emerald-300"],
-            ["Medium", 74, "text-amber-300"],
-            ["Hard", 18, "text-rose-300"],
+            ["Current", `${practice?.currentStreak || 0}d`, "text-emerald-300"],
+            ["Best", `${practice?.bestStreak || 0}d`, "text-cyan-300"],
+            ["Practiced", practice?.totalSolved || 0, "text-violet-300"],
           ].map(([label, value, color]) => (
             <div key={label} className="rounded-lg bg-white/[0.08] px-4 py-3">
               <p className={`text-xl font-black ${color}`}>{value}</p>
@@ -2520,20 +2711,46 @@ function LeetCodeTracker({ theme }) {
           />
         </div>
       </div>
-      <div className="mt-5 grid grid-cols-7 gap-2">
-        {Array.from({ length: 28 }).map((_, index) => (
-          <div
-            key={index}
-            className={`aspect-square rounded-md ${
-              index % 5 === 0
-                ? "bg-violet-500"
-                : index % 3 === 0
-                  ? "bg-emerald-400"
-                  : "bg-white/[0.12]"
-            }`}
-            title={`Day ${index + 1}`}
-          />
-        ))}
+      <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.08] p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold">DSA Practice Streak</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Green boxes appear only for days you marked DSA practice complete.
+            </p>
+          </div>
+          {loading ? (
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Loading activity...
+            </p>
+          ) : null}
+        </div>
+        <div className="mt-4 overflow-x-auto pb-1">
+          <div className="grid w-max grid-flow-col grid-rows-7 gap-2">
+            {activityDays.map((day) => (
+              <div
+                key={day.date}
+                className={`h-4 w-4 rounded-[4px] border transition ${
+                  day.completed
+                    ? "border-emerald-400/70 bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.12)]"
+                    : "border-slate-200/70 bg-slate-200/70 dark:border-white/[0.08] dark:bg-white/[0.10]"
+                }`}
+                title={`${formatActivityDate(day.date)}: ${
+                  day.completed ? "DSA practiced" : "No DSA practice"
+                }`}
+                aria-label={`${formatActivityDate(day.date)} ${
+                  day.completed ? "DSA practiced" : "No DSA practice"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="mt-4 flex items-center justify-end gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <span>Less</span>
+          <span className="h-3 w-3 rounded-[3px] border border-slate-200/70 bg-slate-200/70 dark:border-white/[0.08] dark:bg-white/[0.10]" />
+          <span className="h-3 w-3 rounded-[3px] border border-emerald-400/70 bg-emerald-500" />
+          <span>More</span>
+        </div>
       </div>
     </GlassCard>
   );
@@ -2766,10 +2983,66 @@ function CommunicationPage() {
 }
 
 function DsaPage({ theme }) {
+  const [practice, setPractice] = useState(null);
+  const [practiceLoading, setPracticeLoading] = useState(true);
+  const [practiceError, setPracticeError] = useState("");
+  const [completingPractice, setCompletingPractice] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadPractice = async () => {
+      setPracticeLoading(true);
+      setPracticeError("");
+
+      try {
+        const payload = await dsaApi.today();
+
+        if (!ignore) {
+          setPractice(mergeLocalDsaPractice(payload));
+        }
+      } catch (error) {
+        if (!ignore) {
+          setPracticeError(error.message || "Could not load DSA practice.");
+        }
+      } finally {
+        if (!ignore) {
+          setPracticeLoading(false);
+        }
+      }
+    };
+
+    loadPractice();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const completePractice = async () => {
+    setCompletingPractice(true);
+    setPracticeError("");
+
+    try {
+      const payload = await dsaApi.completeToday();
+      setPractice(payload?.saved === false ? rememberLocalDsaPractice(payload) : payload);
+    } catch (error) {
+      setPracticeError(error.message || "Could not save today's practice.");
+    } finally {
+      setCompletingPractice(false);
+    }
+  };
+
   return (
     <PageFrame eyebrow="DSA practice" title="DSA Practice Hub">
-      <DsaHub />
-      <LeetCodeTracker theme={theme} />
+      <DsaHub
+        practice={practice}
+        loading={practiceLoading}
+        completingPractice={completingPractice}
+        onCompletePractice={completePractice}
+        status={practiceError}
+      />
+      <LeetCodeTracker theme={theme} practice={practice} loading={practiceLoading} />
     </PageFrame>
   );
 }
