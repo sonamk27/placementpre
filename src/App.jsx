@@ -75,7 +75,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { communicationApi, dsaApi, plannerApi } from "./api";
+import { communicationApi, dsaApi, getAuthSession, plannerApi } from "./api";
 
 ChartJS.register(
   CategoryScale,
@@ -3176,59 +3176,306 @@ function AiMentorPage() {
 }
 
 function ProfilePage({ theme }) {
+  const authSession = useMemo(() => getAuthSession(), []);
+  const profileName = authSession?.user?.name || "Sonam";
+  const profileEmail = authSession?.user?.email || "sonam@student.dev";
+  const firstName = profileName.split(" ")[0] || "Student";
+  const profileInitials =
+    profileName
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "S";
+  const readinessScore = 82;
+  const completedSnapshot = progressStats.reduce(
+    (total, [, value]) => total + value,
+    0,
+  );
+  const totalSnapshot = progressStats.reduce(
+    (total, [, , max]) => total + max,
+    0,
+  );
+  const weeklyAverage = Math.round((completedSnapshot / totalSnapshot) * 100);
+  const profileStats = [
+    ["XP", "6,980", "Top 12% cohort", Trophy, "text-amber-300"],
+    ["Readiness", `${readinessScore}%`, "Interview target", TrendingUp, "text-emerald-300"],
+    ["Streak", "21 days", "Best run active", Flame, "text-rose-300"],
+    ["Applications", "9 active", "2 interviews warm", Briefcase, "text-cyan-300"],
+  ];
+  const skillStack = [
+    ["React", 88, "UI patterns"],
+    ["Node.js", 76, "API depth"],
+    ["MongoDB", 72, "Data modeling"],
+    ["SQL", 80, "Joins and windows"],
+    ["DSA", 74, "Daily drills"],
+    ["Communication", 82, "Clear answers"],
+  ];
+  const focusPlan = [
+    ["Today", "Revise sliding window and solve one timed medium problem.", Code2],
+    ["This week", "Convert project notes into STAR interview stories.", MessageSquareText],
+    ["Before next mock", "Add metrics to resume bullets and GitHub README.", FileText],
+  ];
+  const quickActions = [
+    ["Practice DSA", "/dsa", Code2],
+    ["Mock Interview", "/interview", Mic2],
+    ["Plan Today", "/daily-planner", CalendarCheck],
+  ];
+
   return (
     <PageFrame eyebrow="Profile" title="Student Profile and Career Tools">
-      <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-        <GlassCard className="p-5 sm:p-6">
-          <div className="flex items-start gap-4">
-            <div
-              className="flex h-16 w-16 items-center justify-center rounded-lg text-white shadow-glow"
-              style={{ background: primaryGradient }}
-            >
-              <User className="h-8 w-8" />
+      <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <GlassCard className="overflow-hidden">
+          <div className="bg-slate-950 p-5 text-white sm:p-6">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+                <div
+                  className="flex h-24 w-24 shrink-0 items-center justify-center rounded-lg text-3xl font-black text-white shadow-glow"
+                  style={{ background: primaryGradient }}
+                  aria-label={`${profileName} profile avatar`}
+                >
+                  {profileInitials}
+                </div>
+                <div className="min-w-0">
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {["MERN Developer", "Final-year Prep", "Open to SDE"].map((item) => (
+                      <span
+                        key={item}
+                        className="rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold text-violet-100"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-sm font-medium text-violet-200">Placement Profile</p>
+                  <h3 className="mt-2 truncate text-3xl font-black sm:text-4xl">
+                    {profileName}
+                  </h3>
+                  <p className="mt-2 break-words text-sm text-slate-300">
+                    {profileEmail}
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/settings"
+                className="inline-flex w-full items-center justify-center rounded-lg border border-white/10 bg-white px-4 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 sm:w-auto"
+              >
+                <Settings className="mr-2 h-5 w-5" />
+                Update Profile
+              </Link>
             </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                Placement Profile
-              </p>
-              <h3 className="mt-2 text-3xl font-black">Sonam</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                MERN-focused placement preparation with strong DSA, SQL,
-                communication, and project storytelling goals.
-              </p>
-            </div>
+
+            <p className="mt-6 max-w-3xl text-sm leading-7 text-slate-300">
+              {firstName} is tracking a balanced placement path across DSA, SQL,
+              communication, interview stories, resume polish, and company research.
+            </p>
           </div>
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            {[
-              ["XP", "6,980"],
-              ["Readiness", "82%"],
-              ["Streak", "21 days"],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
-                <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-                <p className="mt-1 text-xl font-black">{value}</p>
+
+          <div className="grid gap-px bg-slate-200/70 dark:bg-white/10 sm:grid-cols-2 xl:grid-cols-4">
+            {profileStats.map(([label, value, caption, Icon, color]) => (
+              <div key={label} className="bg-white/70 p-4 dark:bg-white/[0.06] sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    {label}
+                  </p>
+                  <Icon className={`h-5 w-5 ${color}`} />
+                </div>
+                <p className="mt-3 text-2xl font-black">{value}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{caption}</p>
               </div>
             ))}
           </div>
         </GlassCard>
 
         <GlassCard className="p-5 sm:p-6">
-          <IconBadge icon={Target} className="mb-4 text-violet-200" />
-          <h3 className="text-2xl font-bold">Preparation Snapshot</h3>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {progressStats.slice(0, 4).map(([label, value, total, caption, Icon, color]) => (
-              <div key={label} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
-                <div className="flex items-center gap-3">
-                  <Icon className="h-5 w-5 text-violet-300" />
-                  <p className="text-sm font-bold">{label}</p>
-                </div>
-                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{caption}</p>
-                <ProgressBar value={value} total={total} color={color} />
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            <div
+              className="mx-auto flex h-40 w-40 shrink-0 items-center justify-center rounded-full p-3 sm:mx-0"
+              style={{
+                background: `conic-gradient(#8B5CF6 ${
+                  readinessScore * 3.6
+                }deg, rgba(148, 163, 184, 0.22) 0deg)`,
+              }}
+              aria-label={`Placement readiness ${readinessScore}%`}
+            >
+              <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-slate-950 shadow-soft-panel dark:bg-slate-950 dark:text-paper">
+                <span className="text-4xl font-black">{readinessScore}%</span>
+                <span className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+                  Ready
+                </span>
               </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <IconBadge icon={Target} className="mb-4 text-violet-200" />
+              <h3 className="text-2xl font-bold">Readiness Dashboard</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Weekly preparation average is {weeklyAverage}% with strongest momentum
+                in communication and resume readiness.
+              </p>
+              <div className="mt-5 space-y-3">
+                {[
+                  ["Primary goal", "Crack SDE campus interviews", Rocket],
+                  ["Target stack", "React, Node.js, MongoDB, SQL", Layers],
+                  ["Next milestone", "2 mock interviews this week", CalendarCheck],
+                ].map(([label, value, Icon]) => (
+                  <div key={label} className="flex items-center gap-3 border-t border-white/10 pt-3">
+                    <Icon className="h-5 w-5 text-violet-300" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+                      <p className="truncate text-sm font-bold">{value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <GlassCard className="p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <IconBadge icon={BarChart3} className="mb-4 text-cyan-200" />
+              <h3 className="text-2xl font-bold">Preparation Snapshot</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Current progress across the major placement tracks.
+              </p>
+            </div>
+            <span className="rounded-full border border-emerald-300/30 bg-emerald-400/[0.12] px-4 py-2 text-xs font-black text-emerald-700 dark:text-emerald-100">
+              {weeklyAverage}% weekly average
+            </span>
+          </div>
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
+            {progressStats.map(([label, value, total, caption, Icon, color]) => (
+              <Link
+                key={label}
+                to={progressRoutes[label]}
+                className="block rounded-lg border border-white/10 bg-white/[0.08] p-4 text-current no-underline transition hover:-translate-y-0.5 hover:bg-white/[0.12]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Icon className="h-5 w-5 shrink-0 text-violet-300" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">{label}</p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {caption}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-sm font-black">
+                    {Math.round((value / total) * 100)}%
+                  </span>
+                </div>
+                <ProgressBar value={value} total={total} color={color} />
+              </Link>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5 sm:p-6">
+          <IconBadge icon={Sparkles} className="mb-4 text-amber-200" />
+          <h3 className="text-2xl font-bold">Focus Plan</h3>
+          <div className="mt-5 space-y-4">
+            {focusPlan.map(([label, detail, Icon]) => (
+              <div key={label} className="flex gap-3 border-b border-white/10 pb-4 last:border-0 last:pb-0">
+                <Icon className="mt-1 h-5 w-5 shrink-0 text-violet-300" />
+                <div>
+                  <p className="text-sm font-black">{label}</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {detail}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            {quickActions.map(([label, path, Icon]) => (
+              <Link
+                key={label}
+                to={path}
+                className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.08] px-4 py-3 text-sm font-bold text-current transition hover:-translate-y-0.5"
+              >
+                <Icon className="mr-2 h-5 w-5 text-violet-300" />
+                {label}
+              </Link>
             ))}
           </div>
         </GlassCard>
       </section>
+
+      <section className="grid gap-4 xl:grid-cols-[1fr_0.85fr_0.85fr]">
+        <GlassCard className="p-5 sm:p-6">
+          <IconBadge icon={BrainCircuit} className="mb-4 text-violet-200" />
+          <h3 className="text-2xl font-bold">Skill Matrix</h3>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            {skillStack.map(([skill, value, note]) => (
+              <div key={skill}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold">{skill}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{note}</p>
+                  </div>
+                  <span className="text-sm font-black">{value}%</span>
+                </div>
+                <ProgressBar
+                  value={value}
+                  color={value >= 82 ? "from-emerald-400 to-cyan-400" : "from-violet-500 to-fuchsia-500"}
+                />
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5 sm:p-6">
+          <IconBadge icon={Award} className="mb-4 text-amber-200" />
+          <h3 className="text-2xl font-bold">Badge Shelf</h3>
+          <div className="mt-5 space-y-3">
+            {badges.slice(0, 3).map(([title, detail, Icon]) => (
+              <div key={title} className="flex items-center gap-3 border-b border-white/10 pb-3 last:border-0 last:pb-0">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-amber-400/[0.16] text-amber-300">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-sm font-bold">{title}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5 sm:p-6">
+          <IconBadge icon={ClipboardCheck} className="mb-4 text-emerald-200" />
+          <h3 className="text-2xl font-bold">Career Checklist</h3>
+          <div className="mt-5 space-y-3">
+            {[
+              ["Resume ATS score", "86/100", ShieldCheck],
+              ["GitHub project story", "Needs metrics", Github],
+              ["Company pipeline", "5 stages tracked", Building2],
+              ["Interview stories", "7 prepared", Star],
+            ].map(([label, value, Icon]) => (
+              <div key={label} className="flex items-center gap-3">
+                <Icon className="h-5 w-5 shrink-0 text-violet-300" />
+                <p className="min-w-0 flex-1 text-sm font-semibold">{label}</p>
+                <span className="shrink-0 rounded-full bg-white/[0.08] px-3 py-1 text-xs font-bold text-slate-600 dark:text-slate-300">
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+          <a
+            href="#career"
+            className="mt-6 inline-flex w-full items-center justify-center rounded-lg px-4 py-3 text-sm font-black text-white"
+            style={{ background: primaryGradient }}
+          >
+            <FileText className="mr-2 h-5 w-5" />
+            Review Career Tools
+          </a>
+        </GlassCard>
+      </section>
+
       <ResumeAnalyzer />
       <JobTracker />
       <CompanyAndGithub />
