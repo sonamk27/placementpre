@@ -340,7 +340,7 @@ button {
 .roadmap-step {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.08);
   padding: 20px;
 }
@@ -350,7 +350,7 @@ button {
     content: "";
     position: absolute;
     left: calc(100% - 10px);
-    top: 43px;
+    top: 46px;
     width: 28px;
     height: 2px;
     background: linear-gradient(90deg, #8b5cf6, transparent);

@@ -389,6 +389,14 @@ const roadmapPlans = {
   ],
 };
 
+const roadmapProgressValues = [86, 52, 24, 8];
+const roadmapCheckpoints = [
+  "Core notes ready",
+  "Practice sprint active",
+  "Project proof next",
+  "Mock review queue",
+];
+
 const kanbanColumns = [
   ["Applied", "bg-sky-400", ["TCS Ninja", "Zoho Developer", "Infosys Specialist"]],
   ["Assessment", "bg-amber-300", ["Accenture ASE", "Wipro Elite"]],
@@ -412,9 +420,9 @@ const leaderboard = [
 ];
 
 const priorityStyles = {
-  High: "border-rose-400/40 bg-rose-500/[0.15] text-rose-100",
-  Medium: "border-amber-300/40 bg-amber-400/[0.15] text-amber-100",
-  Low: "border-emerald-300/40 bg-emerald-400/[0.15] text-emerald-100",
+  High: "border-rose-400/40 bg-rose-500/[0.15] text-rose-700 dark:text-rose-100",
+  Medium: "border-amber-300/40 bg-amber-400/[0.15] text-amber-700 dark:text-amber-100",
+  Low: "border-emerald-300/40 bg-emerald-400/[0.15] text-emerald-700 dark:text-emerald-100",
 };
 
 const normalizePlannerItems = (items, fallback, prefix) =>
@@ -425,6 +433,12 @@ const normalizePlannerItems = (items, fallback, prefix) =>
     estimate: item.estimate || "25 min",
     completed: Boolean(item.completed),
   }));
+
+const getEstimateMinutes = (estimate = "") => {
+  const minutes = Number.parseInt(String(estimate), 10);
+
+  return Number.isFinite(minutes) ? minutes : 0;
+};
 
 const formatTenScore = (value, fallback = 1) => {
   const numericValue = Number(value);
@@ -2274,111 +2288,233 @@ function PlannerAndTodo() {
     savePlannerChange(() => plannerApi.deleteTask(task.id));
   };
 
+  const plannerItems = [...goals, ...tasks];
+  const completedGoals = goals.filter((goal) => goal.completed).length;
+  const completedTasks = tasks.filter((task) => task.completed).length;
+  const completedItems = completedGoals + completedTasks;
+  const totalItems = plannerItems.length;
+  const completionRate = totalItems
+    ? Math.round((completedItems / totalItems) * 100)
+    : 0;
+  const plannedMinutes = plannerItems.reduce(
+    (total, item) => total + getEstimateMinutes(item.estimate),
+    0,
+  );
+  const remainingHighPriority = plannerItems.filter(
+    (item) => item.priority === "High" && !item.completed,
+  );
+  const nextFocus =
+    remainingHighPriority[0]?.title ||
+    plannerItems.find((item) => !item.completed)?.title ||
+    "Review progress and pick the next stretch task";
+  const planStats = [
+    ["Progress", `${completionRate}%`, `${completedItems}/${totalItems} done`, Target, "text-emerald-300"],
+    ["Planned Time", `${plannedMinutes} min`, "Across goals and tasks", Timer, "text-cyan-300"],
+    ["Goal Wins", `${completedGoals}/${goals.length}`, "Daily targets closed", Trophy, "text-amber-300"],
+    ["Task Queue", `${tasks.length}`, `${completedTasks} completed`, ListChecks, "text-violet-300"],
+  ];
+
   return (
-    <section id="planner" className="grid gap-4 xl:grid-cols-2">
-      <GlassCard className="p-5 sm:p-6">
-        <IconBadge icon={CalendarCheck} className="mb-4 text-emerald-200" />
-        <h3 className="text-2xl font-bold">Smart Daily Planner</h3>
-        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-          AI-generated daily targets based on your progress and weak areas.
-        </p>
-        <div className="mt-5 space-y-3">
-          {plannerLoading ? (
-            <p className="rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm text-slate-500 dark:text-slate-400">
-              Loading planner...
-            </p>
-          ) : null}
-          {goals.map((goal) => (
-            <label
-              key={goal.id}
-              className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4"
-            >
-              <input
-                type="checkbox"
-                checked={goal.completed}
-                onChange={() => toggleGoal(goal)}
-                className="h-5 w-5 accent-violet-500"
-              />
-              <span
-                className={`flex-1 text-sm font-semibold ${
-                  goal.completed ? "text-slate-400 line-through" : ""
-                }`}
+    <section id="planner" className="space-y-4">
+      <GlassCard className="overflow-hidden">
+        <div className="grid gap-px bg-slate-200/70 dark:bg-white/10 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="bg-white/70 p-5 dark:bg-white/[0.06] sm:p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+              <div
+                className="flex h-32 w-32 shrink-0 items-center justify-center rounded-full p-2"
+                style={{
+                  background: `conic-gradient(#22c55e ${
+                    completionRate * 3.6
+                  }deg, rgba(148, 163, 184, 0.24) 0deg)`,
+                }}
+                aria-label={`Planner progress ${completionRate}%`}
               >
-                {goal.title}
-              </span>
-              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[goal.priority]}`}>
-                {goal.priority}
-              </span>
-              <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
-                {goal.estimate}
-              </span>
-            </label>
-          ))}
+                <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-white text-slate-950 shadow-soft-panel dark:bg-slate-950 dark:text-paper">
+                  <span className="text-3xl font-black">{completionRate}%</span>
+                  <span className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+                    complete
+                  </span>
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <IconBadge icon={CalendarCheck} className="mb-4 text-emerald-200" />
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-300">
+                  Daily execution
+                </p>
+                <h3 className="mt-2 text-2xl font-bold">Today&apos;s Prep Plan</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  Keep the day anchored around the highest-impact unfinished work.
+                </p>
+                <div className="mt-4 rounded-lg border border-emerald-300/20 bg-emerald-400/[0.12] p-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-200">
+                    Next focus
+                  </p>
+                  <p className="mt-2 text-sm font-bold leading-6">{nextFocus}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-px bg-slate-200/70 dark:bg-white/10 sm:grid-cols-2">
+            {planStats.map(([label, value, caption, Icon, color]) => (
+              <div key={label} className="bg-white/70 p-4 dark:bg-white/[0.06] sm:p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                    {label}
+                  </p>
+                  <Icon className={`h-5 w-5 ${color}`} />
+                </div>
+                <p className="mt-3 text-2xl font-black">{value}</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  {caption}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       </GlassCard>
 
-      <GlassCard className="p-5 sm:p-6">
-        <IconBadge icon={ListChecks} className="mb-4 text-violet-200" />
-        <h3 className="text-2xl font-bold">AI To-Do List</h3>
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <input
-            value={taskText}
-            onChange={(event) => setTaskText(event.target.value)}
-            className="min-h-12 flex-1 rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
-            placeholder="Add task"
-          />
-          <button
-            onClick={addTask}
-            className="inline-flex items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white"
-            style={{ background: primaryGradient }}
-          >
-            <Plus className="mr-2 h-5 w-5" />
-            Add Task
-          </button>
-        </div>
-        <div className="mt-5 space-y-3">
-          {tasks.map((task) => (
-            <div key={task.id} className="flex items-center gap-3 rounded-lg bg-white/[0.08] p-3">
-              <input
-                type="checkbox"
-                checked={task.completed}
-                onChange={() => toggleTask(task)}
-                className="h-5 w-5 accent-violet-500"
-                aria-label={`Complete ${task.title}`}
-              />
-              <Pencil className="hidden h-4 w-4 text-slate-400 sm:block" />
-              <p
-                className={`flex-1 text-sm font-semibold ${
-                  task.completed ? "text-slate-400 line-through" : ""
-                }`}
-              >
-                {task.title}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <GlassCard className="p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <IconBadge icon={Target} className="mb-4 text-emerald-200" />
+              <h3 className="text-2xl font-bold">Goal Checklist</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Main outcomes for the day, sorted by placement impact.
               </p>
-              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[task.priority]}`}>
-                {task.priority}
-              </span>
-              <span className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
-                {task.estimate}
-              </span>
-              <button
-                onClick={() => deleteTask(task)}
-                className="rounded-md bg-white/10 p-2"
-                aria-label="Delete task"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
             </div>
-          ))}
-        </div>
-        {plannerNotice ? (
-          <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-400/[0.12] p-4 text-sm leading-6 text-amber-100">
-            {plannerNotice}
+            <span className="w-fit rounded-full border border-emerald-300/30 bg-emerald-400/[0.12] px-4 py-2 text-xs font-black text-emerald-700 dark:text-emerald-100">
+              {completedGoals}/{goals.length} closed
+            </span>
           </div>
-        ) : null}
-        <div className="mt-4 rounded-lg border border-violet-300/20 bg-violet-400/[0.12] p-4 text-sm leading-6">
-          AI Suggestion: {suggestion}
-        </div>
-      </GlassCard>
+          <div className="mt-5 space-y-3">
+            {plannerLoading ? (
+              <p className="rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm text-slate-500 dark:text-slate-400">
+                Loading planner...
+              </p>
+            ) : null}
+            {goals.map((goal) => (
+              <label
+                key={goal.id}
+                className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-4 sm:flex-row sm:items-center"
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={goal.completed}
+                    onChange={() => toggleGoal(goal)}
+                    className="h-5 w-5 shrink-0 accent-violet-500"
+                  />
+                  <span
+                    className={`min-w-0 flex-1 text-sm font-semibold ${
+                      goal.completed ? "text-slate-400 line-through" : ""
+                    }`}
+                  >
+                    {goal.title}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 pl-8 sm:shrink-0 sm:pl-0">
+                  <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[goal.priority]}`}>
+                    {goal.priority}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {goal.estimate}
+                  </span>
+                </div>
+              </label>
+            ))}
+          </div>
+        </GlassCard>
+
+        <GlassCard className="p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <IconBadge icon={ListChecks} className="mb-4 text-violet-200" />
+              <h3 className="text-2xl font-bold">Task Queue</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Add quick tasks, close them as you work, and keep the list lean.
+              </p>
+            </div>
+            <span className="w-fit rounded-full border border-violet-300/30 bg-violet-400/[0.12] px-4 py-2 text-xs font-black text-violet-700 dark:text-violet-100">
+              {tasks.length} active
+            </span>
+          </div>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <input
+              value={taskText}
+              onChange={(event) => setTaskText(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  addTask();
+                }
+              }}
+              className="min-h-12 flex-1 rounded-lg border border-slate-200 bg-white/70 px-4 text-sm outline-none focus:border-violet-400 dark:border-white/10 dark:bg-white/[0.08]"
+              placeholder="Add task"
+            />
+            <button
+              onClick={addTask}
+              disabled={!taskText.trim()}
+              className="inline-flex items-center justify-center rounded-lg px-5 py-3 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+              style={{ background: primaryGradient }}
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              Add Task
+            </button>
+          </div>
+          <div className="mt-5 space-y-3">
+            {tasks.length ? (
+              tasks.map((task) => (
+                <div key={task.id} className="flex flex-col gap-3 rounded-lg border border-white/10 bg-white/[0.08] p-3 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleTask(task)}
+                      className="h-5 w-5 shrink-0 accent-violet-500"
+                      aria-label={`Complete ${task.title}`}
+                    />
+                    <Pencil className="hidden h-4 w-4 shrink-0 text-slate-400 sm:block" />
+                    <p
+                      className={`min-w-0 flex-1 text-sm font-semibold ${
+                        task.completed ? "text-slate-400 line-through" : ""
+                      }`}
+                    >
+                      {task.title}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pl-8 sm:shrink-0 sm:pl-0">
+                    <span className={`rounded-full border px-3 py-1 text-xs font-bold ${priorityStyles[task.priority]}`}>
+                      {task.priority}
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                      {task.estimate}
+                    </span>
+                    <button
+                      onClick={() => deleteTask(task)}
+                      className="rounded-md bg-white/10 p-2 transition hover:bg-white/20"
+                      aria-label="Delete task"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="rounded-lg border border-white/10 bg-white/[0.08] p-4 text-sm text-slate-500 dark:text-slate-400">
+                No tasks yet. Add one focused action for the next study block.
+              </p>
+            )}
+          </div>
+          {plannerNotice ? (
+            <div className="mt-4 rounded-lg border border-amber-300/20 bg-amber-400/[0.12] p-4 text-sm leading-6 text-amber-700 dark:text-amber-100">
+              {plannerNotice}
+            </div>
+          ) : null}
+          <div className="mt-4 rounded-lg border border-violet-300/20 bg-violet-400/[0.12] p-4 text-sm leading-6">
+            <span className="font-bold">AI Suggestion:</span> {suggestion}
+          </div>
+        </GlassCard>
+      </div>
     </section>
   );
 }
@@ -2386,36 +2522,83 @@ function PlannerAndTodo() {
 function RoadmapGenerator() {
   const [role, setRole] = useState("MERN Developer");
   const plan = roadmapPlans[role];
+  const averageProgress = Math.round(
+    roadmapProgressValues.reduce((total, value) => total + value, 0) /
+      roadmapProgressValues.length,
+  );
+  const activeWeekIndex = roadmapProgressValues.findIndex((value) => value < 80);
+  const activeWeek =
+    activeWeekIndex === -1 ? plan[plan.length - 1][0] : plan[activeWeekIndex][0];
 
   return (
     <GlassCard className="p-5 sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <IconBadge icon={Map} className="mb-4 text-cyan-200" />
-          <h3 className="text-2xl font-bold">AI Roadmap Generator</h3>
-          <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-            Select a role and get a weekly roadmap, learning path, and skills
-            progress plan.
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-300">
+            Role roadmap
+          </p>
+          <h3 className="mt-2 text-2xl font-bold">Four-Week Prep Sprint</h3>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Select a role and track the weekly learning path, checkpoint, and
+            interview proof you should build next.
           </p>
         </div>
-        <select
-          value={role}
-          onChange={(event) => setRole(event.target.value)}
-          className="min-h-12 rounded-lg border border-slate-200 bg-white/70 px-4 text-sm font-bold outline-none dark:border-white/10 dark:bg-white/[0.08]"
-        >
-          {Object.keys(roadmapPlans).map((item) => (
-            <option key={item}>{item}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+          <span className="inline-flex min-h-12 items-center justify-center rounded-lg border border-cyan-300/30 bg-cyan-400/[0.12] px-4 text-sm font-black text-cyan-700 dark:text-cyan-100">
+            {activeWeek} active
+          </span>
+          <select
+            value={role}
+            onChange={(event) => setRole(event.target.value)}
+            className="min-h-12 rounded-lg border border-slate-200 bg-white/70 px-4 text-sm font-bold outline-none dark:border-white/10 dark:bg-white/[0.08]"
+          >
+            {Object.keys(roadmapPlans).map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
+        </div>
       </div>
+
+      <div className="mt-6 grid gap-3 md:grid-cols-3">
+        {[
+          ["Sprint Progress", `${averageProgress}%`, TrendingUp],
+          ["Current Role", role, Briefcase],
+          ["Final Output", "Deployable project story", Rocket],
+        ].map(([label, value, Icon]) => (
+          <div key={label} className="rounded-lg border border-white/10 bg-white/[0.08] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                {label}
+              </p>
+              <Icon className="h-5 w-5 text-cyan-300" />
+            </div>
+            <p className="mt-3 text-sm font-black sm:text-base">{value}</p>
+          </div>
+        ))}
+      </div>
+
       <div className="mt-6 grid gap-4 lg:grid-cols-4">
-        {plan.map(([week, detail]) => (
+        {plan.map(([week, detail], index) => (
           <div key={week} className="roadmap-step">
-            <p className="text-sm font-black text-violet-300">{week}</p>
-            <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-black text-violet-700 dark:text-violet-300">
+                {week}
+              </p>
+              <span className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1 text-xs font-black text-slate-500 dark:text-slate-300">
+                {roadmapProgressValues[index]}%
+              </span>
+            </div>
+            <p className="mt-3 min-h-16 text-sm leading-6 text-slate-600 dark:text-slate-300">
               {detail}
             </p>
-            <ProgressBar value={week === "Week 1" ? 86 : week === "Week 2" ? 52 : 22} />
+            <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.06] p-3">
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+                Checkpoint
+              </p>
+              <p className="mt-1 text-sm font-bold">{roadmapCheckpoints[index]}</p>
+            </div>
+            <ProgressBar value={roadmapProgressValues[index]} />
           </div>
         ))}
       </div>
